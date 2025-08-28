@@ -5,8 +5,8 @@ import bcrypt from "bcrypt";
 async function setupAdmin() {
   const adminDetails = {
     username: "Admin",
-    email: "alpened@proton.me",
-    password: "@#$SwissAlps@#$6969", // You should change this
+    email: "admin@simplet.com",
+    password: "Admin", // You should change this
   };
 
   try {
