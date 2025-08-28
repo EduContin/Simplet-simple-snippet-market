@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 import Image from "next/image";
 import customEmojis from "@/models/custom-emojis";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,6 @@ import {
   X,
   Check,
   Users,
-  Clock,
   Maximize2,
   Minimize2
 } from "lucide-react";
@@ -47,7 +46,6 @@ const Shoutbox = () => {
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const shoutboxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -232,25 +230,22 @@ const Shoutbox = () => {
   const onlineUsers = Array.from(new Set(messages.slice(0, 10).map(msg => msg.username)));
 
   return (
-    <Card className="mb-8 border-0 bg-gradient-to-br from-card via-card to-muted/20 shadow-xl overflow-hidden">
-      <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5">
+    <Card className="mb-8 border border-gray-300 rounded-lg">
+      <CardHeader className="border-b border-gray-200 bg-gray-50 py-3 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg">
-              <MessageCircle className="h-5 w-5 text-primary" />
-            </div>
+            <MessageCircle className="h-5 w-5 text-gray-600" />
             <div>
-              <CardTitle className="text-xl">Live Shoutbox</CardTitle>
-              <CardDescription className="flex items-center gap-2">
-                <Clock className="h-3 w-3" />
+              <CardTitle className="text-lg font-semibold text-gray-900">Live Shoutbox</CardTitle>
+              <CardDescription className="text-sm text-gray-600">
                 Real-time conversations
               </CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <Badge variant="outline" className="font-mono">
+              <Users className="h-4 w-4 text-gray-500" />
+              <Badge variant="outline" className="text-xs border-gray-300">
                 {onlineUsers.length} active
               </Badge>
             </div>
@@ -258,7 +253,7 @@ const Shoutbox = () => {
               variant="outline"
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="h-8 w-8 p-0 hover:bg-primary/10 transition-all duration-200"
+              className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-100"
             >
               {isExpanded ? (
                 <Minimize2 className="h-4 w-4" />
@@ -272,86 +267,77 @@ const Shoutbox = () => {
       
       <CardContent className="p-0">
         {/* Messages Area */}
-        <ScrollArea 
-          className={`px-4 transition-all duration-300 ease-in-out ${
-            isExpanded ? 'h-96' : 'h-48'
-          }`}
+        <ScrollArea
+          className={`px-4 ${isExpanded ? 'h-96' : 'h-48'}`}
         >
-          <div className="space-y-3 py-4">
-            <AnimatePresence>
-              {messages.length > 0 ? (
-                messages.map((msg, index) => (
-                  <motion.div
-                    key={msg.id}
-                    initial={{ opacity: 0, y: -10, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                    transition={{ duration: 0.3, delay: index * 0.02 }}
-                    className="group relative"
-                  >
-                    <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/30 transition-all duration-200 border border-transparent hover:border-border/30">
-                      <Avatar className="h-8 w-8 ring-2 ring-background shadow-sm">
-                        <AvatarImage 
-                          src={msg.avatar_url || "/prof-pic.png"} 
-                          alt={msg.username}
-                        />
-                        <AvatarFallback className="text-xs font-medium bg-gradient-to-br from-primary/20 to-secondary/20">
-                          {msg.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm text-foreground hover:text-primary transition-colors cursor-pointer">
-                            {msg.username}
-                          </span>
-                          <div className="h-1 w-1 rounded-full bg-muted-foreground/40" />
-                          <span className="text-xs text-muted-foreground">
-                            now
-                          </span>
-                        </div>
-                        <div className="text-sm text-foreground/90 leading-relaxed break-words">
-                          {renderMessageWithEmojis(msg.message)}
-                        </div>
+          <div className="space-y-0 py-4">
+            {messages.length > 0 ? (
+              messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className="group relative"
+                >
+                  <div className="flex items-start gap-3 p-3 border-b border-gray-100 hover:bg-gray-50">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src={msg.avatar_url || "/prof-pic.png"}
+                        alt={msg.username}
+                      />
+                      <AvatarFallback className="text-xs font-medium bg-gray-200 text-gray-700">
+                        {msg.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-sm text-gray-900">
+                          {msg.username}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          now
+                        </span>
                       </div>
-                      
-                      {session && session.user.name === msg.username && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditMessage(msg.id)}
-                          className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-7 w-7 p-0 hover:bg-primary/10"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                      )}
+                      <div className="text-sm text-gray-700 leading-relaxed break-words">
+                        {renderMessageWithEmojis(msg.message)}
+                      </div>
                     </div>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="text-center py-12">
-                  <div className="mb-4">
-                    <MessageCircle className="h-12 w-12 text-muted-foreground/50 mx-auto" />
+                    
+                    {session && session.user.name === msg.username && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditMessage(msg.id)}
+                        className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0 hover:bg-gray-100"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
-                  <p className="text-muted-foreground">No messages yet.</p>
-                  <p className="text-muted-foreground/70 text-sm mt-1">Be the first to start a conversation!</p>
                 </div>
-              )}
-            </AnimatePresence>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <div className="mb-4">
+                  <MessageCircle className="h-12 w-12 text-gray-300 mx-auto" />
+                </div>
+                <p className="text-gray-500">No messages yet.</p>
+                <p className="text-gray-400 text-sm mt-1">Be the first to start a conversation!</p>
+              </div>
+            )}
           </div>
         </ScrollArea>
 
         {/* Input Area */}
-        <div className="border-t bg-gradient-to-r from-muted/20 to-muted/10 p-4">
+        <div className="border-t border-gray-200 bg-white p-4">
           {editingMessageId && (
-            <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="mb-3 flex items-center gap-2 text-sm text-gray-600 bg-yellow-50 border border-yellow-200 rounded p-2">
               <Edit className="h-3 w-3" />
               <span>Editing message</span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleCancelEdit}
-                className="ml-auto h-6 px-2 text-xs"
+                className="ml-auto h-6 px-2 text-xs hover:bg-yellow-100"
               >
                 <X className="h-3 w-3 mr-1" />
                 Cancel
@@ -367,32 +353,32 @@ const Shoutbox = () => {
                 value={inputMessage}
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
-                className="pr-12 bg-background/50 border-border/50 focus:bg-background transition-all duration-200"
+                className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 placeholder={
                   editingMessageId ? "Edit your message..." : "Type your message..."
                 }
                 maxLength={MAX_MESSAGE_LENGTH}
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
                 {inputMessage.length}/{MAX_MESSAGE_LENGTH}
               </div>
             </div>
             
             <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-10 w-10 p-0">
+                <Button variant="outline" size="sm" className="h-10 w-10 p-0 border-gray-300 hover:bg-gray-100">
                   <Smile className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-3" align="end">
-                <div className="grid grid-cols-8 gap-2">
+              <PopoverContent className="w-80 p-3 border-gray-300" align="end">
+                <div className="grid grid-cols-8 gap-1">
                   {Object.entries(customEmojis).map(([emoji, url]) => (
                     <Button
                       key={emoji}
                       variant="ghost"
                       size="sm"
                       onClick={() => handleEmojiClick(emoji)}
-                      className="h-8 w-8 p-0 hover:bg-muted rounded-lg"
+                      className="h-8 w-8 p-0 hover:bg-gray-100 rounded"
                     >
                       <Image
                         src={url}
@@ -411,7 +397,7 @@ const Shoutbox = () => {
             <Button
               onClick={editingMessageId ? handleUpdateMessage : handleSendMessage}
               disabled={!inputMessage.trim() || inputMessage.length > MAX_MESSAGE_LENGTH}
-              className="h-10 px-4 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+              className="h-10 px-4 bg-green-600 hover:bg-green-700 text-white border-0"
             >
               {editingMessageId ? (
                 <Check className="h-4 w-4 mr-2" />
@@ -423,14 +409,9 @@ const Shoutbox = () => {
           </div>
           
           {errorMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mt-2 p-2 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-md"
-            >
+            <div className="mt-2 p-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded">
               {errorMessage}
-            </motion.div>
+            </div>
           )}
         </div>
       </CardContent>
