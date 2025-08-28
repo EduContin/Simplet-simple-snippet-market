@@ -99,7 +99,7 @@ const ForumSummary: React.FC = () => {
   }, [sections]);
 
   const LoadingSkeleton = () => (
-    <Card className="border-0 bg-gradient-to-br from-card via-card to-muted/20 shadow-xl">
+    <Card>
       <CardHeader className="pb-4">
         <div className="flex items-center gap-3">
           <Skeleton className="h-8 w-8 rounded-full" />
@@ -149,7 +149,7 @@ const ForumSummary: React.FC = () => {
 
   if (sections.length === 0) {
     return (
-      <Card className="mb-8 border-0 bg-gradient-to-br from-card via-card to-muted/20 shadow-xl">
+      <Card className="mb-8">
         <CardHeader className="text-center pb-4">
           <CardTitle className="flex items-center justify-center gap-3 text-2xl">
             <div className="p-3 rounded-full bg-gradient-to-br from-primary/20 to-primary/10">
@@ -183,8 +183,8 @@ const ForumSummary: React.FC = () => {
   );
 
   return (
-    <Card className="mb-8 border-0 bg-gradient-to-br from-card via-card to-muted/20 shadow-xl overflow-hidden">
-      <CardHeader className="pb-6 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5">
+    <Card className="mb-8">
+      <CardHeader className="pb-6">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <CardTitle className="flex items-center gap-3 text-2xl">
@@ -242,7 +242,7 @@ const ForumSummary: React.FC = () => {
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               <TabsList className="flex h-12 w-max items-center gap-2 p-2 bg-gradient-to-r from-muted/50 to-muted/30 rounded-xl min-w-full">
-                {sections.map((section, index) => (
+                {sections.map((section) => (
                   <TabsTrigger
                     key={section.id}
                     value={section.name}

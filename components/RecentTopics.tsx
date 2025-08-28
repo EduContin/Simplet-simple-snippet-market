@@ -69,8 +69,8 @@ const timeSinceLastActivity = (lastActivity: string): string => {
 };
 
 const LoadingSkeleton = () => (
-  <Card className="mb-8 border-0 bg-gradient-to-br from-card via-card to-muted/20 shadow-xl">
-    <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5">
+  <Card className="mb-8">
+    <CardHeader className="pb-4">
       <div className="flex items-center gap-3">
         <Skeleton className="h-8 w-8 rounded-full" />
         <div className="space-y-2">
@@ -138,8 +138,8 @@ function RecentTopics() {
 
   if (error) {
     return (
-      <Card className="mb-8 border-0 bg-gradient-to-br from-card via-card to-muted/20 shadow-xl">
-        <CardHeader className="pb-4 bg-gradient-to-r from-destructive/5 via-transparent to-destructive/5">
+      <Card className="mb-8">
+        <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-3 text-xl">
             <div className="p-2 rounded-full bg-gradient-to-br from-destructive/20 to-destructive/10">
               <MessageSquare className="h-5 w-5 text-destructive" />
@@ -162,8 +162,8 @@ function RecentTopics() {
   }
 
   return (
-    <Card className="mb-8 border-0 bg-gradient-to-br from-card via-card to-muted/20 shadow-xl overflow-hidden">
-      <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5">
+    <Card className="mb-8">
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg">

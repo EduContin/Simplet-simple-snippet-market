@@ -91,13 +91,42 @@ const AnnouncementsTopics: React.FC = () => {
 
 
 
+  if (isLoading) {
+    return (
+      <Card className="mb-8">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+            <div>
+              <div className="h-6 w-40 bg-muted rounded animate-pulse mb-2" />
+              <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-4 p-4">
+                <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 w-3/4 bg-muted rounded animate-pulse" />
+                  <div className="h-4 w-1/2 bg-muted rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (error) {
     return <div>{error}</div>;
   }
 
   return (
-    <Card className="mb-8 border-0 bg-gradient-to-br from-card via-card to-muted/20 shadow-xl overflow-hidden">
-      <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5">
+    <Card className="mb-8">
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg">
