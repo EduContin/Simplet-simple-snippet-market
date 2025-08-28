@@ -49,75 +49,57 @@ const RuleSection: React.FC<{ title: string; rules: string[] }> = ({
 
 const HelpPage: React.FC = () => {
   const generalRules = [
-    "Community guidelines are enforced throughout the platform to maintain a positive learning environment for all students and educators.",
-    "Academic integrity is paramount. Plagiarism, cheating, and dishonest academic practices are strictly prohibited and will result in disciplinary action.",
-    "Respect for all community members is required. Harassment, discrimination, or offensive behavior towards students, teachers, or staff will not be tolerated.",
-    "Privacy and personal information must be protected. Sharing personal details of other users without consent is forbidden.",
-    "Appropriate language and content are expected at all times. Profanity, inappropriate content, or offensive material will be removed.",
-    "Multiple accounts are not permitted. Each student should maintain only one active account on the platform.",
-    "Impersonation of other students, teachers, or staff members is strictly prohibited.",
-    "System abuse, including attempts to hack, spam, or disrupt platform functionality, will result in immediate account suspension.",
-    "Copyright and intellectual property rights must be respected. Unauthorized sharing of copyrighted materials is prohibited.",
-    "Students are responsible for maintaining the confidentiality of their login credentials and account security.",
-    "False reporting or misuse of the reporting system to harass other users is not allowed.",
-    "Commercial activities and advertising are not permitted unless specifically authorized by the institution.",
-    "Students must follow their institution's code of conduct and academic policies while using this platform.",
+   "Respect and inclusivity are required. Treat every member equally, regardless of skill level, background, or culture.",
+    "Constructive collaboration is encouraged. Provide actionable feedback, credit contributors, and engage in meaningful discussions.",
+    "Offensive, discriminatory, or harmful behavior will not be tolerated under any circumstances.",
+    "Professional conduct is expected at all times. Communicate as if you were in a professional workplace.",
+    "Privacy must be respected. Do not share personal information or private conversations without consent.",
+    "Content that promotes hate, harassment, or illegal activity is strictly prohibited and will be removed.",
+    "Plagiarism, impersonation, or taking credit for the work of others is not allowed.",
+    "Spam, self-promotion without context, or irrelevant advertising is forbidden.",
+    "Members should report suspicious or inappropriate behavior to moderators instead of retaliating directly.",
+    "Respect cultural and language diversity. Discussions should remain welcoming to a global developer audience.",
+    "Multiple accounts for malicious purposes or manipulation of reviews/ratings are prohibited and will be IP banned.,",
+    "Collaborations and debates should remain technical, solution-focused, and free from personal attacks.",
   ];
 
   const postingRules = [
-    "Violations may result in warnings, content removal, or account restrictions depending on severity.",
-    "Spam posting, including repetitive or irrelevant content, is prohibited across all platform areas.",
-    "Content must be posted in the appropriate course sections or discussion areas to maintain organization.",
-    "Use respectful and constructive language in all communications and discussions.",
-    "Academic discussions should remain on-topic and contribute meaningfully to the learning experience.",
-    "When sharing external links, ensure they are relevant, educational, and from reputable sources.",
-    "Include proper citations and references when sharing academic content or research materials.",
-    "Group project collaborations should be conducted in designated spaces and follow assignment guidelines.",
-    "Cross-posting identical content across multiple courses or sections is discouraged unless relevant.",
-    "Discussion titles should clearly reflect the content and purpose of the post.",
-    "Students are responsible for all content they post and must ensure it meets academic standards.",
-    "Personal disputes should be resolved privately or through appropriate channels, not in public forums.",
-    "Sharing of assignment solutions or exam answers is considered academic dishonesty and is prohibited.",
-    "Content that violates copyright or academic integrity policies will be removed immediately.",
-    "Posts should contribute to the educational environment and support collaborative learning.",
-    "Formatting should be clear and professional to enhance readability and communication.",
-    "When asking for help, provide sufficient context and show evidence of your own efforts first.",
-    "Peer assistance is encouraged, but direct provision of assignment answers is not permitted.",
-    "Course-specific guidelines and posting requirements must be followed for each class.",
+    "All snippets must include clear documentation, usage instructions, and examples.",
+    "Code should follow best practices for readability, maintainability, and modularity.",
+    "Security is a priority. Snippets must not include malicious, hidden, or harmful logic.",
+    "Only upload original code or code you are authorized to share. Plagiarized content is prohibited.",
+    "All snippets must pass automated and manual validation checks before publication.",
+    "Licenses must be correctly applied. Authors are solely responsible for selecting the appropriate license for their code.",
+    "Executable binaries, obfuscated code, or incomplete/non-functional snippets will be rejected.",
+    "Copyright and intellectual property rights must be respected. Unauthorized sharing of copyrighted materials is not allowed.",
+    "Snippets that intentionally break, exploit, or compromise systems are forbidden.",
+    "Content that violates laws, promotes hate, or spreads harmful software will be removed immediately.",
   ];
 
   const collaborationRules = [
-    "Group work and peer collaboration are encouraged within the guidelines set by individual courses.",
-    "Requests for study groups should be made in appropriate course sections or designated collaboration areas.",
-    "Academic assistance should focus on understanding concepts rather than providing direct answers.",
-    "All collaborative work must comply with individual course policies regarding group assignments.",
-    "Peer tutoring and study sessions should be conducted in accordance with institutional guidelines.",
-    "Sharing of course materials should only occur as permitted by instructors and institutional policy.",
-    "Students should respect intellectual property when collaborating on projects and assignments.",
-    "Group project coordination should use designated platform tools and communication channels.",
-    "Collaborative discussions should maintain focus on educational objectives and learning outcomes.",
-    "Peer feedback should be constructive, respectful, and aimed at supporting academic growth.",
-    "Study material exchanges must comply with copyright laws and course-specific sharing policies.",
-    "Online study sessions should be conducted in appropriate virtual spaces provided by the platform.",
-    "Academic integrity must be maintained in all collaborative activities and group work.",
-    "Resource sharing should prioritize educational value and support learning objectives.",
-    "Cross-course collaboration should be approved by relevant instructors when appropriate.",
+   "Collaboration and co-creation are encouraged. Developers can co-author snippets and share ownership transparently.",
+    "Feedback and reviews should be constructive, respectful, and specific.",
+    "Enhancement requests should focus on improving snippet quality, security, or usability.",
+    "All contributors must be credited fairly for their work.",
+    "Taking someone else's snippet, making minor edits, and republishing it without meaningful changes is not allowed.",
+    "Open communication between authors and users is encouraged to refine snippets and resolve issues.",
+    "Mentorship and knowledge sharing are valued. Experienced developers should support newcomers where possible.",
+    "Collaboration must remain professional, transparent, and aimed at mutual growth.",
+    "Toxic behavior, gatekeeping, or excluding others from participating will not be tolerated.",
+    "Community-driven improvements should be documented clearly so changes are traceable and verifiable.",
   ];
 
   const communicationRules = [
-    "All platform communication guidelines apply to messaging, forums, and live chat features.",
-    "Academic discussions should remain professional and focused on educational content.",
-    "Personal conversations should be kept to private messaging when appropriate.",
-    "Extended debates or disagreements should be moved to private channels or resolved with instructor guidance.",
-    "Inappropriate use of communication features may result in restricted access to these tools.",
-    "Requests for academic help should be directed to appropriate channels (instructor, TA, or designated help forums).",
-    "Spam messaging, excessive notifications, or communication abuse is strictly prohibited.",
-    "Course announcements and important communications should not be obscured by casual conversation.",
-    "Professional language standards should be maintained in all course-related communications.",
-    "Emergency or urgent academic matters should be communicated through proper institutional channels.",
-    "Communication should support the learning environment and respect all participants' time and focus.",
-    "Language other than the course instruction language should be used only when specifically permitted.",
-    "Voice and video communication should follow the same respectful guidelines as text-based interaction.",
+   "Always use clear, respectful, and professional language when interacting with others.",
+    "Feedback should be specific and solution-oriented. Avoid vague comments such as 'it doesn’t work.'",
+    "Responses to inquiries and feedback should be timely, especially from snippet authors.",
+    "Keep discussions focused on technical and project-related topics.",
+    "Use official platform channels (forums, support desk, or messaging) for transparency and accountability.",
+    "Profanity, offensive remarks, or harassment of any kind will not be tolerated.",
+    "Spam, irrelevant advertising, or disruptive self-promotion is forbidden.",
+    "Bug reports should be submitted clearly with reproducible steps when possible.",
+    "Respect cultural and linguistic diversity. Communication should remain inclusive and welcoming to a global audience.",
+    "Trust and professionalism are built through transparency, honesty, and clarity in communication.",
   ];
 
   return (
@@ -133,7 +115,7 @@ const HelpPage: React.FC = () => {
 
       <main className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-center mb-8 text-blue-400">
-          Welcome to VEC Learning Platform
+          Welcome to Simplet
         </h1>
 
         <nav className="mb-8 p-4 bg-gray-800 rounded-lg">
@@ -185,37 +167,42 @@ const HelpPage: React.FC = () => {
           <h2 className="text-2xl font-semibold mb-4 text-blue-400">
             About Our Platform
           </h2>
-          <p className="text-gray-300 mb-4">
-            VEC (Virtual Education and Communication) is a comprehensive educational platform designed to facilitate 
-            effective online learning and collaboration between students, educators, and academic institutions. 
-            Our mission is to create an engaging, accessible, and supportive digital learning environment that 
-            enhances educational outcomes for learners of all levels.
-          </p>
-          <p className="text-gray-300 mb-4">
-            Our platform supports a wide range of educational activities and features:
-          </p>
-          <ul className="list-disc list-inside text-gray-300 mb-4">
-            <li>Interactive course content and multimedia resources</li>
-            <li>Collaborative project spaces and group work tools</li>
-            <li>Discussion forums for academic discourse</li>
-            <li>Assignment submission and feedback systems</li>
-            <li>Virtual classroom and video conferencing capabilities</li>
-            <li>Progress tracking and assessment tools</li>
-            <li>Peer-to-peer learning and study group formation</li>
-            <li>Academic resource sharing and library integration</li>
-            <li>Mobile-friendly access for learning on-the-go</li>
-          </ul>
-          <p className="text-gray-300 mb-4">
-            As our platform continues to evolve, we aim to implement advanced features such as 
-            AI-powered learning recommendations, integrated academic integrity tools, enhanced 
-            accessibility features, and seamless integration with institutional systems.
-          </p>
-          <p className="text-gray-300">
-            We are committed to maintaining a safe, inclusive, and academically rigorous environment 
-            where all members of our learning community can thrive. Our dedicated support team and 
-            robust moderation systems ensure that our platform remains focused on educational excellence 
-            and positive learning experiences for everyone.
-          </p>
+        <p className="text-gray-300 mb-4">
+  Simplet is a <span className="text-white font-semibold">dedicated marketplace for modular code snippets</span>, 
+  designed to help developers, teams, and organizations accelerate their projects without compromising on quality. 
+  Instead of rewriting the same pieces of code again and again, you can 
+  <span className="text-white font-semibold"> search, purchase, and share ready-to-use, tested, and documented snippets</span> 
+  across multiple technologies.
+</p>
+
+<p className="text-gray-300 mb-4">
+  We provide a <span className="text-white font-semibold">safe and professional environment</span> where creators can monetize their work 
+  by publishing code components that are reusable, modular, and easy to integrate.  
+  Buyers and contributors benefit from:  
+</p>
+
+<ul className="list-disc list-inside text-gray-300 mb-4">
+  <li><span className="text-white font-semibold">Time savings</span> and less repetitive coding</li>
+  <li><span className="text-white font-semibold">Reduced development costs</span> through reusable solutions</li>
+  <li><span className="text-white font-semibold">Access to community-validated code</span> that is reliable and secure</li>
+</ul>
+
+<p className="text-gray-300 mb-4">
+  <span className="text-white font-semibold">Key highlights of our platform include:</span>
+</p>
+
+<ul className="list-disc list-inside text-gray-300 mb-4">
+  <li><span className="text-white font-semibold">Curated libraries:</span> every snippet is reviewed for security, performance, and usability.</li>
+  <li><span className="text-white font-semibold">Community-driven growth:</span> developers can interact, review, and improve snippets together.</li>
+  <li><span className="text-white font-semibold">Monetization options:</span> authors can provide free snippets, sell them at a fair price, or release them under open licenses.</li>
+
+</ul>
+
+<p className="text-gray-300 mb-4">
+  Our mission is to create a <span className="text-white font-semibold">collaborative and sustainable ecosystem</span> 
+  where code is not only a tool, but also an <span className="text-white font-semibold">asset that can be valued, reused, and evolved collectively</span>.
+</p>
+
         </section>
 
         <section id="general-rules" className="mb-8 bg-gray-800 p-6 rounded-lg">
@@ -235,37 +222,50 @@ const HelpPage: React.FC = () => {
           <h2 className="text-2xl font-semibold mb-4 text-blue-400">
             Terms of Service
           </h2>
-          <ol className="list-decimal list-inside text-gray-300">
-            <li>
-              The institution reserves the right to modify these Terms of Service 
-              with appropriate notice to users.
-            </li>
-            <li>
-              All educational content and user contributions are subject to institutional 
-              academic policies and intellectual property guidelines.
-            </li>
-            <li>
-              The institution reserves the right to suspend or terminate user accounts 
-              for violations of academic integrity or platform guidelines.
-            </li>
-            <li>
-              Content that violates academic standards or institutional policies is prohibited.</li>
-            <li>
-              Failure to comply with academic integrity policies may result in 
-              disciplinary action according to institutional procedures.
-            </li>
-            <li>
-              Users are responsible for maintaining the security and appropriate use of their accounts.
-            </li>
-            <li>
-              The institution is not liable for academic or personal losses that may occur 
-              through platform use, though we strive to provide reliable service.
-            </li>
-            <li>
-              By using this platform, users agree to comply with all applicable educational 
-              policies and local regulations.
-            </li>
-          </ol>
+         <ol className="list-decimal list-inside text-gray-300">
+  <li>
+    The platform reserves the right to update or modify these Terms of Service 
+    at any time, with reasonable notice provided to users.
+  </li>
+  <li>
+    All code snippets, documentation, and user contributions are subject to 
+    intellectual property laws and the licensing terms selected by the author.
+  </li>
+  <li>
+    Users are responsible for ensuring that any content they upload is original 
+    or properly licensed. Plagiarized or unauthorized content is strictly prohibited.
+  </li>
+  <li>
+    The platform may suspend or terminate accounts that violate these Terms, 
+    including cases of abuse, impersonation, or malicious activity.
+  </li>
+  <li>
+    Snippets must not contain harmful, malicious, or insecure code. 
+    Any attempt to distribute malware or exploit vulnerabilities will result in removal 
+    and possible legal action.
+  </li>
+  <li>
+    Users are responsible for maintaining the confidentiality and security of their login credentials. 
+    Sharing accounts or using multiple accounts for malicious purposes is forbidden.
+  </li>
+  <li>
+    The platform provides no guarantee that uploaded snippets will generate revenue. 
+    Monetization depends on user adoption, pricing, and community engagement.
+  </li>
+  <li>
+    The platform is not liable for damages, losses, or disputes resulting from the use 
+    of third-party code. All snippets are provided “as is” and at the user’s own risk.
+  </li>
+  <li>
+    Commercial use, redistribution, or modification of snippets must comply 
+    with the licensing terms specified by the author.
+  </li>
+  <li>
+    By using this platform, users agree to follow all applicable laws, 
+    respect the rights of other developers, and comply with these Terms of Service.
+  </li>
+</ol>
+
         </section>
 
         <section className="mb-8 bg-gray-800 p-6 rounded-lg">
@@ -278,12 +278,12 @@ const HelpPage: React.FC = () => {
               href="mailto:support@vec-platform.edu"
               className="text-blue-400 hover:underline"
             >
-              support@vec-platform.edu
+              support@simplet-platform.edu
             </a>
           </p>
           <p className="mt-4 p-4 bg-blue-900 text-gray-300 rounded-lg italic">
-            For urgent academic matters or emergency situations, please contact your 
-            instructor directly or use your institution's emergency communication channels.
+            For urgent matters or emergency situations, please contact your 
+            code provider directly or use your institution's emergency communication channels.
           </p>
         </section>
       </main>
