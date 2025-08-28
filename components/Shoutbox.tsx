@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { io, Socket } from "socket.io-client";
-import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import customEmojis from "@/models/custom-emojis";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,12 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { 
-  MessageCircle, 
-  Send, 
-  Smile, 
-  Edit, 
-  X, 
+import {
+  MessageCircle,
+  Send,
+  Smile,
+  Edit,
+  X,
   Check,
   Users,
   Clock,
