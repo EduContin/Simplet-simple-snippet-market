@@ -13,15 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Home, 
-  Search, 
-  BookOpen, 
-  HelpCircle, 
-  User, 
-  Settings, 
-  LogOut,
-  ChevronDown 
+import {
+  Home,
+  BookOpen,
+  HelpCircle,
+  User,
+  Settings,
+  LogOut
 } from "lucide-react";
 
 const Navbar: React.FC = () => {
@@ -53,93 +51,105 @@ const Navbar: React.FC = () => {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 max-w-screen-2xl items-center">
-        <div className="mr-4 hidden md:flex">
-          <Link className="mr-6 flex items-center space-x-2" href="/">
-            <span className="hidden font-bold sm:inline-block">
+    <nav className="sticky top-0 z-50 w-full border-b border-default bg-canvas">
+      <div className="mx-auto flex h-12 max-w-screen-xl items-center px-4">
+        <div className="mr-6 hidden md:flex">
+          <Link className="mr-8 flex items-center" href="/">
+            <span className="text-base font-semibold text-foreground">
               SIMPLET
             </span>
           </Link>
-          <nav className="flex items-center gap-6 text-sm">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-2 transition-colors hover:text-foreground/80 text-foreground/60"
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
+          <nav className="flex items-center space-x-6">
+            {navigationItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
         </div>
 
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            {/* Mobile menu would go here if needed */}
-          </div>
-          <nav className="flex items-center">
+        <div className="flex flex-1 items-center justify-end">
+          <nav className="flex items-center space-x-4">
             {session?.user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage 
-                        src={avatarUrl || "/prof-pic.png"} 
-                        alt={session.user.name || "User"} 
+                  <Button
+                    variant="ghost"
+                    className="relative h-7 w-7 rounded-full p-0 hover:bg-canvas-subtle border border-border hover:border-muted-foreground/30"
+                  >
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage
+                        src={avatarUrl || "/prof-pic.png"}
+                        alt={session.user.name || "User"}
                       />
-                      <AvatarFallback>
+                      <AvatarFallback className="text-xs bg-canvas-subtle">
                         {session.user.name?.charAt(0).toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
+                <DropdownMenuContent
+                  className="w-48 bg-canvas border-border mt-1"
+                  align="end"
+                  forceMount
+                >
+                  <DropdownMenuLabel className="font-normal px-3 py-2">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
+                      <p className="text-sm font-medium text-foreground">
                         {session.user.name}
                       </p>
-                      <p className="text-xs leading-none text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {session.user.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-border" />
                   <DropdownMenuItem asChild>
-                    <Link href={`/users/${session.user.name}`} className="flex items-center">
+                    <Link
+                      href={`/users/${session.user.name}`}
+                      className="flex items-center px-3 py-2 text-sm hover:bg-canvas-subtle cursor-pointer"
+                    >
                       <User className="mr-2 h-4 w-4" />
                       <span>Profile</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/settings" className="flex items-center">
+                    <Link
+                      href="/settings"
+                      className="flex items-center px-3 py-2 text-sm hover:bg-canvas-subtle cursor-pointer"
+                    >
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Settings</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    className="flex items-center cursor-pointer"
+                  <DropdownMenuSeparator className="bg-border" />
+                  <DropdownMenuItem
+                    className="flex items-center px-3 py-2 text-sm hover:bg-canvas-subtle cursor-pointer"
                     onClick={() => signOut()}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
+                    <span>Sign out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/login">Sign In</Link>
-                </Button>
-                <Button size="sm" asChild>
-                  <Link href="/register">Sign Up</Link>
-                </Button>
+              <div className="flex items-center space-x-3">
+                <Link
+                  href="/login"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/register"
+                  className="btn btn-primary text-sm px-3 py-1.5"
+                >
+                  Sign up
+                </Link>
               </div>
             )}
           </nav>

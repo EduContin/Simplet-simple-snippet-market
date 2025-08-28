@@ -1,116 +1,267 @@
-@tailwind base;
+ @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.0%;
-    --radius: 0.5rem;
+    /* GitHub Dark Theme Color Palette */
+    --background: #0d1117;
+    --foreground: #e6edf3;
+    --card: #161b22;
+    --card-foreground: #e6edf3;
+    --popover: #161b22;
+    --popover-foreground: #e6edf3;
+    --primary: #2f81f7;
+    --primary-foreground: #ffffff;
+    --secondary: #21262d;
+    --secondary-foreground: #e6edf3;
+    --muted: #21262d;
+    --muted-foreground: #7d8590;
+    --accent: #2f81f7;
+    --accent-foreground: #ffffff;
+    --destructive: #f85149;
+    --destructive-foreground: #ffffff;
+    --border: #30363d;
+    --input: #21262d;
+    --ring: #2f81f7;
+    --radius: 0.375rem;
+    
+    /* Additional GitHub colors */
+    --success: #3fb950;
+    --warning: #d29922;
+    --canvas: #161b22;
+    --canvas-subtle: #21262d;
+    --border-muted: #21262d;
+    --neutral-emphasis: #6e7681;
+    --neutral-subtle: rgba(110, 118, 129, 0.1);
   }
 
   html {
     font-family:
-      ui-sans-serif,
-      system-ui,
       -apple-system,
       BlinkMacSystemFont,
       "Segoe UI",
-      Roboto,
-      "Helvetica Neue",
-      Arial,
       "Noto Sans",
+      Helvetica,
+      Arial,
       sans-serif,
       "Apple Color Emoji",
-      "Segoe UI Emoji",
-      "Segoe UI Symbol",
-      "Noto Color Emoji";
+      "Segoe UI Emoji";
   }
 
   body {
-    @apply bg-gray-900 text-slate-200 antialiased;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "kern";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Improve readability of form elements */
   input,
   select,
   textarea {
-    @apply bg-slate-800 border-slate-600 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm;
+    background-color: var(--input);
+    border: 1px solid var(--border);
+    color: var(--foreground);
+    border-radius: var(--radius);
+    font-size: 14px;
+    line-height: 20px;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.3);
   }
 
-  /* Customize scrollbar */
+  /* GitHub-style scrollbar */
   ::-webkit-scrollbar {
-    @apply w-2 h-2;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-slate-800;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-600 rounded-full;
+    background-color: var(--neutral-emphasis);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #8b949e;
   }
 }
 
 @layer components {
+  /* GitHub-style button */
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid;
+    border-radius: var(--radius);
+    appearance: none;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.3, 0, 0.5, 1);
   }
 
   .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+    color: var(--primary-foreground);
+    background-color: var(--primary);
+    border-color: rgba(47, 129, 247, 0.4);
+    box-shadow: 0 1px 0 rgba(27, 31, 36, 0.04);
   }
 
+  .btn-primary:hover {
+    background-color: #1f6feb;
+    border-color: rgba(31, 111, 235, 0.4);
+  }
+
+  .btn-primary:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.3);
+  }
+
+  .btn-secondary {
+    color: var(--foreground);
+    background-color: var(--secondary);
+    border-color: var(--border);
+    box-shadow: 0 1px 0 rgba(27, 31, 36, 0.04);
+  }
+
+  .btn-secondary:hover {
+    background-color: #30363d;
+    border-color: #8b949e;
+  }
+
+  /* GitHub-style card */
   .card {
-    @apply p-6 bg-slate-800 rounded-lg border border-slate-700 shadow-lg;
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    color: var(--card-foreground);
   }
 
+  .card-header {
+    padding: 16px 16px 0 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    margin: 0;
+  }
+
+  /* GitHub-style input */
   .input {
-    @apply block w-full px-3 py-2 placeholder-slate-400 sm:text-sm;
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--foreground);
+    background-color: var(--input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    outline: none;
+    box-shadow: inset 0 1px 0 rgba(208, 215, 222, 0.2);
   }
 
-  /* Improved checkbox */
+  .input::placeholder {
+    color: var(--muted-foreground);
+  }
+
+  /* GitHub-style checkbox */
   .checkbox {
-    @apply relative flex items-center justify-center h-5 w-5 rounded border-2 border-slate-500 checked:bg-indigo-600 checked:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 cursor-pointer;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+    background-color: var(--canvas);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
   }
 
-  .checkbox:before {
+  .checkbox:checked {
+    background-color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .checkbox:checked::before {
     content: "";
-    @apply absolute w-3 h-3 transform scale-0 transition-transform duration-200 ease-in-out;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23fff'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E");
-  }
-
-  .checkbox:checked:before {
-    @apply scale-100;
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffffff'%3E%3Cpath d='M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
   }
 }
 
-/* Utility classes */
-.text-gradient {
-  @apply text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500;
+/* GitHub-style utility classes */
+.text-primary {
+  color: var(--primary);
 }
 
-.hover\:scale-105:hover {
-  transform: scale(1.05);
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.text-success {
+  color: var(--success);
+}
+
+.text-danger {
+  color: var(--destructive);
+}
+
+.bg-canvas {
+  background-color: var(--canvas);
+}
+
+.bg-canvas-subtle {
+  background-color: var(--canvas-subtle);
+}
+
+.border-default {
+  border-color: var(--border);
 }
 
 .transition {
-  @apply transition-all duration-200 ease-in-out;
+  transition: all 0.2s ease-in-out;
+}
+
+/* GitHub-style hover effects */
+.hover-grow:hover {
+  transform: scale(1.02);
+}
+
+.hover-shadow:hover {
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* Hide scrollbar for horizontal tabs */
@@ -132,30 +283,49 @@
   filter: blur(0);
 }
 
+/* GitHub-style content elements */
 blockquote {
-  border-left: 3px solid #4a5568;
-  padding-left: 1rem;
-  margin: 1rem 0;
+  border-left: 4px solid var(--border-muted);
+  padding-left: 16px;
+  margin: 16px 0;
+  color: var(--muted-foreground);
   font-style: italic;
 }
 
 pre {
-  background-color: #2d3748;
-  padding: 1rem;
-  border-radius: 0.375rem;
+  background-color: var(--canvas-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
   overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 code {
-  font-family: monospace;
+  background-color: var(--neutral-subtle);
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+}
+
+pre code {
+  background-color: transparent;
+  border-radius: 0;
+  padding: 0;
 }
 
 .hidden-content {
-  background-color: #1f2531;
-  color: #c50000;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
+  background-color: var(--canvas-subtle);
+  border: 1px solid var(--border);
+  color: var(--destructive);
+  padding: 4px 8px;
+  border-radius: var(--radius);
   user-select: none;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
 }
 
 .overflow-wrap-break-word {

@@ -7,8 +7,6 @@ import { CircularProgress } from "@mui/material";
 import ForumSummary from "@/components/ForumSummary";
 import StickyTopics from "@/components/AnnouncementsTopics";
 import RecentTopics from "@/components/RecentTopics";
-import AnimatedDashboard from "@/components/AnimatedDashboard";
-import MountainBackground from "@/components/MountainBackground";
 import Shoutbox from "@/components/Shoutbox";
 
 export default function ForumDashboard() {
@@ -16,7 +14,11 @@ export default function ForumDashboard() {
   const router = useRouter();
 
   if (status === "loading") {
-    return <CircularProgress />;
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-canvas">
+        <CircularProgress />
+      </div>
+    );
   }
 
   if (status === "unauthenticated") {
@@ -25,24 +27,36 @@ export default function ForumDashboard() {
   }
 
   return (
-    <div className="min-h-screen text-white relative">
-      <MountainBackground isLoading={false} isSuccess={false} />
-      <div className="container mx-auto px-4 py-8 relative z-10">
-        <AnimatedDashboard>
-          <h1 className="text-4xl font-bold mb-8 text-center">
-            Welcome, {session?.user?.name}
+    <div className="min-h-screen bg-canvas">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Header Section */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-foreground mb-2">
+            Welcome back, {session?.user?.name}
           </h1>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-            <div className="lg:col-span-2">
-              <ForumSummary />
-            </div>
-            <div>
-              <StickyTopics />
-              <RecentTopics />
-            </div>
+          <p className="text-muted-foreground text-sm">
+            Here&apos;s what&apos;s happening in your forum today
+          </p>
+        </div>
+        
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Main Content Area */}
+          <div className="lg:col-span-3 space-y-6">
+            <ForumSummary />
           </div>
-          <div className="flex justify-between"></div>
-        </AnimatedDashboard>
+          
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <StickyTopics />
+            <RecentTopics />
+          </div>
+        </div>
+        
+        {/* Shoutbox Section */}
+        <div className="mt-6">
+          <Shoutbox />
+        </div>
       </div>
     </div>
   );
