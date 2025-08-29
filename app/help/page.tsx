@@ -168,11 +168,11 @@ const HelpPage: React.FC = () => {
             About Our Platform
           </h2>
         <p className="text-gray-300 mb-4">
-  Simplet is a <span className="text-white font-semibold">dedicated marketplace for modular code snippets</span>, 
+  Simplet is a <span className="text-white font-semibold"> dedicated marketplace for modular code snippets</span>, 
   designed to help developers, teams, and organizations accelerate their projects without compromising on quality. 
   Instead of rewriting the same pieces of code again and again, you can 
-  <span className="text-white font-semibold"> search, purchase, and share ready-to-use, tested, and documented snippets</span> 
-  across multiple technologies.
+   <span className="text-white font-semibold"> search, purchase, and share ready-to-use, tested, and documented snippets</span>  across multiple technologies. 
+    
 </p>
 
 <p className="text-gray-300 mb-4">
@@ -275,10 +275,10 @@ const HelpPage: React.FC = () => {
           <p className="text-gray-300">
             For technical support, academic assistance, or general inquiries, please contact us at:{" "}
             <a
-              href="mailto:support@vec-platform.edu"
+              href="mailto:support@vec-platform.dev"
               className="text-blue-400 hover:underline"
             >
-              support@simplet-platform.edu
+              support@simplet-platform.dev
             </a>
           </p>
           <p className="mt-4 p-4 bg-blue-900 text-gray-300 rounded-lg italic">
