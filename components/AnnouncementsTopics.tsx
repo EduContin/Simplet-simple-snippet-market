@@ -84,25 +84,31 @@ const AnnouncementsTopics: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="border border-border rounded-lg bg-background mb-6">
+      <div className="border rounded-md mb-4" style={{
+        borderColor: 'var(--border-default)',
+        backgroundColor: 'var(--canvas)'
+      }}>
         {/* Header */}
-        <div className="border-b border-border px-4 py-3">
+        <div className="border-b px-4 py-2" style={{
+          borderColor: 'var(--border-default)',
+          backgroundColor: 'var(--canvas-subtle)'
+        }}>
           <div className="flex items-center justify-between">
-            <div className="h-5 w-24 bg-muted rounded animate-pulse" />
-            <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-24 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
+            <div className="h-3 w-16 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
           </div>
         </div>
         
         {/* Loading items */}
-        <div className="divide-y divide-border">
+        <div className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center gap-3 px-4 py-3">
-              <div className="h-5 w-5 rounded-full bg-muted animate-pulse flex-shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
-                <div className="h-3 w-1/2 bg-muted rounded animate-pulse" />
+            <div key={i} className="flex items-center gap-3 px-4 py-2">
+              <div className="h-4 w-4 rounded-full animate-pulse flex-shrink-0" style={{ backgroundColor: 'var(--neutral-muted)' }} />
+              <div className="flex-1 space-y-1">
+                <div className="h-3 w-3/4 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
+                <div className="h-3 w-1/2 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
               </div>
-              <div className="h-3 w-12 bg-muted rounded animate-pulse" />
+              <div className="h-3 w-8 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
             </div>
           ))}
         </div>
@@ -115,71 +121,97 @@ const AnnouncementsTopics: React.FC = () => {
   }
 
   return (
-    <div className="border border-border-default rounded-md bg-canvas mb-4">
-      {/* Header */}
-      <div className="border-b border-border-default px-4 py-2 bg-canvas-subtle">
+    <div className="border rounded-md mb-4" style={{
+      borderColor: 'var(--border-default)',
+      backgroundColor: 'var(--canvas)'
+    }}>
+      {/* Header - GitHub Style */}
+      <div className="border-b px-4 py-2" style={{
+        borderColor: 'var(--border-default)',
+        backgroundColor: 'var(--canvas-subtle)'
+      }}>
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold" style={{ color: 'var(--fg-default)' }}>
-            Announcements
-          </h3>
-          <span className="text-xs" style={{ color: 'var(--fg-muted)' }}>
-            {announcements.length} {announcements.length === 1 ? "topic" : "topics"}
+          <div className="flex items-center gap-2">
+            <Megaphone className="h-4 w-4" style={{ color: 'var(--fg-muted)' }} />
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--fg-default)' }}>
+              Announcements
+            </h3>
+          </div>
+          <span className="text-xs px-2 py-1 rounded border" style={{
+            color: 'var(--fg-muted)',
+            borderColor: 'var(--border-default)',
+            backgroundColor: 'var(--canvas)'
+          }}>
+            {announcements.length}
           </span>
         </div>
       </div>
       
-      {/* List */}
+      {/* List - GitHub Repository Style */}
       <div className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
         {announcements.length > 0 ? (
           announcements.map((topic) => (
             <div
               key={topic.id}
-              className="flex items-center gap-3 px-4 py-2 hover:bg-canvas-subtle transition-colors cursor-pointer"
+              className="group px-4 py-2 transition-colors cursor-pointer"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
-              {/* Avatar */}
-              <Avatar className="h-4 w-4 flex-shrink-0">
-                <AvatarImage src={`/api/avatar/${topic.username}`} alt={topic.username} />
-                <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--canvas-subtle)', color: 'var(--fg-muted)' }}>
-                  {topic.username.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/thread/${slugify(topic.title)}-${topic.id}`}
-                      className="text-sm font-medium hover:underline transition-colors leading-tight block truncate"
-                      style={{ color: 'var(--fg-default)' }}
-                      title={topic.title}
-                    >
-                      {limitTitle(topic.title, 50)}
-                    </Link>
-                    <div className="flex items-center gap-1 mt-0.5 text-xs" style={{ color: 'var(--fg-muted)' }}>
+              <div className="flex items-start gap-3">
+                {/* Avatar */}
+                <Avatar className="h-5 w-5 flex-shrink-0 mt-0.5">
+                  <AvatarImage src={`/api/avatar/${topic.username}`} alt={topic.username} />
+                  <AvatarFallback className="text-xs" style={{
+                    backgroundColor: 'var(--canvas-subtle)',
+                    color: 'var(--fg-muted)'
+                  }}>
+                    {topic.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
                       <Link
-                        href={`/users/${topic.username}`}
-                        className="hover:underline transition-colors"
-                        style={{ color: 'var(--fg-muted)' }}
+                        href={`/thread/${slugify(topic.title)}-${topic.id}`}
+                        className="text-sm font-medium hover:underline transition-colors leading-5 block"
+                        style={{ color: 'var(--accent)' }}
+                        title={topic.title}
                       >
-                        {topic.username}
+                        {limitTitle(topic.title, 45)}
                       </Link>
-                      <span>•</span>
-                      <span>{timeSinceLastActivity(topic.last_post_at)}</span>
+                      <div className="flex items-center gap-1 mt-1 text-xs" style={{ color: 'var(--fg-muted)' }}>
+                        <Link
+                          href={`/users/${topic.username}`}
+                          className="hover:underline transition-colors font-medium"
+                          style={{ color: 'var(--fg-muted)' }}
+                        >
+                          {topic.username}
+                        </Link>
+                        <span>•</span>
+                        <span>{timeSinceLastActivity(topic.last_post_at)}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs flex-shrink-0" style={{ color: 'var(--fg-muted)' }}>
-                    <span>{topic.post_count}</span>
+                    <div className="flex items-center gap-1 text-xs flex-shrink-0 mt-1" style={{ color: 'var(--fg-muted)' }}>
+                      <span className="font-medium">{topic.post_count}</span>
+                      <span>replies</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="px-4 py-6 text-center">
+          <div className="px-4 py-8 text-center">
             <div style={{ color: 'var(--fg-muted)' }}>
-              <Megaphone className="h-6 w-6 mx-auto mb-2 opacity-50" />
-              <p className="text-xs">No announcements at this time</p>
+              <Megaphone className="h-8 w-8 mx-auto mb-2 opacity-40" />
+              <p className="text-sm mb-1">No announcements</p>
+              <p className="text-xs" style={{ color: 'var(--fg-subtle)' }}>Important updates will appear here</p>
             </div>
           </div>
         )}
