@@ -58,13 +58,19 @@ const timeSinceLastActivity = (lastActivity: string): string => {
 };
 
 const LoadingSkeleton = () => (
-  <div className="border border-border-default rounded-md bg-canvas mb-4">
+  <div className="border rounded-md mb-4" style={{
+    borderColor: 'var(--border-default)',
+    backgroundColor: 'var(--canvas)'
+  }}>
     {/* Header */}
-    <div className="border-b border-border-default px-4 py-2 bg-canvas-subtle">
+    <div className="border-b px-4 py-2" style={{
+      borderColor: 'var(--border-default)',
+      backgroundColor: 'var(--canvas-subtle)'
+    }}>
       <div className="flex items-center justify-between">
-        <div className="h-4 w-20 bg-canvas-subtle rounded animate-pulse" />
+        <div className="h-4 w-20 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
         <div className="flex items-center gap-2">
-          <div className="h-3 w-12 bg-canvas-subtle rounded animate-pulse" />
+          <div className="h-3 w-12 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
           <RefreshCw className="h-4 w-4 animate-spin" style={{ color: 'var(--fg-muted)' }} />
         </div>
       </div>
@@ -74,12 +80,12 @@ const LoadingSkeleton = () => (
     <div className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
       {[1, 2, 3].map((i) => (
         <div key={i} className="flex items-center gap-3 px-4 py-2">
-          <div className="h-4 w-4 rounded-full bg-canvas-subtle animate-pulse flex-shrink-0" />
+          <div className="h-4 w-4 rounded-full animate-pulse flex-shrink-0" style={{ backgroundColor: 'var(--neutral-muted)' }} />
           <div className="flex-1 space-y-1">
-            <div className="h-3 w-3/4 bg-canvas-subtle rounded animate-pulse" />
-            <div className="h-3 w-1/2 bg-canvas-subtle rounded animate-pulse" />
+            <div className="h-3 w-3/4 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
+            <div className="h-3 w-1/2 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
           </div>
-          <div className="h-3 w-8 bg-canvas-subtle rounded animate-pulse" />
+          <div className="h-3 w-8 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
         </div>
       ))}
     </div>
@@ -121,23 +127,38 @@ function RecentTopics() {
 
   if (error) {
     return (
-      <div className="border border-border-default rounded-md bg-canvas mb-4">
+      <div className="border rounded-md mb-4" style={{
+        borderColor: 'var(--border-default)',
+        backgroundColor: 'var(--canvas)'
+      }}>
         {/* Header */}
-        <div className="border-b border-border-default px-4 py-2 bg-canvas-subtle">
+        <div className="border-b px-4 py-2" style={{
+          borderColor: 'var(--border-default)',
+          backgroundColor: 'var(--canvas-subtle)'
+        }}>
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold" style={{ color: 'var(--fg-default)' }}>
-              Recent Topics
-            </h3>
-            <span className="text-xs" style={{ color: 'var(--destructive)' }}>Error</span>
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" style={{ color: 'var(--fg-muted)' }} />
+              <h3 className="text-sm font-semibold" style={{ color: 'var(--fg-default)' }}>
+                Recent Topics
+              </h3>
+            </div>
+            <span className="text-xs px-2 py-1 rounded border" style={{
+              color: 'var(--destructive)',
+              borderColor: 'var(--destructive)',
+              backgroundColor: 'var(--canvas)'
+            }}>
+              Error
+            </span>
           </div>
         </div>
         
         {/* Error content */}
-        <div className="px-4 py-6 text-center">
+        <div className="px-4 py-8 text-center">
           <div style={{ color: 'var(--fg-muted)' }}>
-            <RefreshCw className="h-6 w-6 mx-auto mb-2 opacity-50" />
-            <p className="text-xs" style={{ color: 'var(--destructive)' }}>Failed to load recent topics</p>
-            <p className="text-xs mt-1" style={{ color: 'var(--fg-muted)' }}>Please try refreshing the page</p>
+            <RefreshCw className="h-8 w-8 mx-auto mb-2 opacity-40" />
+            <p className="text-sm mb-1" style={{ color: 'var(--destructive)' }}>Failed to load recent topics</p>
+            <p className="text-xs" style={{ color: 'var(--fg-muted)' }}>Please try refreshing the page</p>
           </div>
         </div>
       </div>
@@ -145,16 +166,29 @@ function RecentTopics() {
   }
 
   return (
-    <div className="border border-border-default rounded-md bg-canvas mb-4">
-      {/* Header */}
-      <div className="border-b border-border-default px-4 py-2 bg-canvas-subtle">
+    <div className="border rounded-md mb-4" style={{
+      borderColor: 'var(--border-default)',
+      backgroundColor: 'var(--canvas)'
+    }}>
+      {/* Header - GitHub Style */}
+      <div className="border-b px-4 py-2" style={{
+        borderColor: 'var(--border-default)',
+        backgroundColor: 'var(--canvas-subtle)'
+      }}>
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold" style={{ color: 'var(--fg-default)' }}>
-            Recent Topics
-          </h3>
           <div className="flex items-center gap-2">
-            <span className="text-xs" style={{ color: 'var(--fg-muted)' }}>
-              {threads.length} {threads.length === 1 ? "topic" : "topics"}
+            <MessageSquare className="h-4 w-4" style={{ color: 'var(--fg-muted)' }} />
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--fg-default)' }}>
+              Recent Topics
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-2 py-1 rounded border" style={{
+              color: 'var(--fg-muted)',
+              borderColor: 'var(--border-default)',
+              backgroundColor: 'var(--canvas)'
+            }}>
+              {threads.length}
             </span>
             {isRefreshing && (
               <RefreshCw className="h-4 w-4 animate-spin" style={{ color: 'var(--fg-muted)' }} />
@@ -163,65 +197,79 @@ function RecentTopics() {
         </div>
       </div>
       
-      {/* List */}
+      {/* List - GitHub Repository Style */}
       <div className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
         {threads.length > 0 ? (
           threads.map((thread) => (
             <div
               key={thread.id}
-              className="flex items-center gap-3 px-4 py-2 hover:bg-canvas-subtle transition-colors cursor-pointer"
+              className="group px-4 py-2 transition-colors cursor-pointer"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
-              {/* Avatar */}
-              <Avatar className="h-4 w-4 flex-shrink-0">
-                <AvatarImage src={`/api/avatar/${thread.username}`} alt={thread.username} />
-                <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--canvas-subtle)', color: 'var(--fg-muted)' }}>
-                  {thread.username.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/thread/${slugify(thread.title)}-${thread.id}`}
-                      className="text-sm font-medium hover:underline transition-colors leading-tight block truncate"
-                      style={{ color: 'var(--fg-default)' }}
-                      title={thread.title}
-                    >
-                      {limitTitle(thread.title, 50)}
-                    </Link>
-                    <div className="flex items-center gap-1 mt-0.5 text-xs" style={{ color: 'var(--fg-muted)' }}>
+              <div className="flex items-start gap-3">
+                {/* Avatar */}
+                <Avatar className="h-5 w-5 flex-shrink-0 mt-0.5">
+                  <AvatarImage src={`/api/avatar/${thread.username}`} alt={thread.username} />
+                  <AvatarFallback className="text-xs" style={{
+                    backgroundColor: 'var(--canvas-subtle)',
+                    color: 'var(--fg-muted)'
+                  }}>
+                    {thread.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
                       <Link
-                        href={`/users/${thread.username}`}
-                        className="hover:underline transition-colors"
-                        style={{ color: 'var(--fg-muted)' }}
+                        href={`/thread/${slugify(thread.title)}-${thread.id}`}
+                        className="text-sm font-medium hover:underline transition-colors leading-5 block"
+                        style={{ color: 'var(--accent)' }}
+                        title={thread.title}
                       >
-                        {thread.username}
+                        {limitTitle(thread.title, 45)}
                       </Link>
-                      <span>•</span>
-                      <span>{timeSinceLastActivity(thread.last_post_at)}</span>
-                      {thread.category_name && (
-                        <>
-                          <span>•</span>
-                          <span className="truncate">{thread.category_name}</span>
-                        </>
-                      )}
+                      <div className="flex items-center gap-1 mt-1 text-xs" style={{ color: 'var(--fg-muted)' }}>
+                        <Link
+                          href={`/users/${thread.username}`}
+                          className="hover:underline transition-colors font-medium"
+                          style={{ color: 'var(--fg-muted)' }}
+                        >
+                          {thread.username}
+                        </Link>
+                        <span>•</span>
+                        <span>{timeSinceLastActivity(thread.last_post_at)}</span>
+                        {thread.category_name && (
+                          <>
+                            <span>•</span>
+                            <span className="truncate font-medium" style={{ color: 'var(--fg-subtle)' }}>
+                              {thread.category_name}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs flex-shrink-0" style={{ color: 'var(--fg-muted)' }}>
-                    <span>{thread.post_count}</span>
+                    <div className="flex items-center gap-1 text-xs flex-shrink-0 mt-1" style={{ color: 'var(--fg-muted)' }}>
+                      <span className="font-medium">{thread.post_count}</span>
+                      <span>replies</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="px-4 py-6 text-center">
+          <div className="px-4 py-8 text-center">
             <div style={{ color: 'var(--fg-muted)' }}>
-              <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-50" />
-              <p className="text-xs">No recent topics found</p>
-              <p className="text-xs mt-1">Start a new discussion to get the conversation going!</p>
+              <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-40" />
+              <p className="text-sm mb-1">No recent topics</p>
+              <p className="text-xs" style={{ color: 'var(--fg-subtle)' }}>New discussions will appear here</p>
             </div>
           </div>
         )}
