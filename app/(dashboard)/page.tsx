@@ -55,32 +55,42 @@ export default function ForumDashboard() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--canvas)' }}>
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header Section - GitHub Style */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-semibold leading-tight mb-2" style={{ color: 'var(--fg-default)' }}>
+              <h1
+                className="text-2xl font-semibold leading-tight mb-2"
+                style={{ color: 'var(--fg-default)' }}
+              >
                 Welcome back, {session?.user?.name}
               </h1>
-              <p className="text-base leading-6" style={{ color: 'var(--fg-muted)' }}>
+              <p
+                className="text-sm leading-5"
+                style={{ color: 'var(--fg-muted)' }}
+              >
                 Here&apos;s what&apos;s happening in your forum today
               </p>
             </div>
           </div>
         </div>
         
-        {/* Main Content Grid - GitHub-inspired layout */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-          {/* Main Content Area */}
-          <div className="xl:col-span-3">
-            <ForumSummary />
+        {/* Main Content Grid - GitHub Repository Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Main Content Area - 75% width like GitHub */}
+          <div className="lg:col-span-3">
+            <div className="space-y-6">
+              <ForumSummary />
+            </div>
           </div>
           
-          {/* Sidebar */}
-          <div className="space-y-4">
-            <StickyTopics />
-            <RecentTopics />
+          {/* Sidebar - 25% width like GitHub */}
+          <div className="lg:col-span-1">
+            <div className="space-y-4 sticky top-20">
+              <StickyTopics />
+              <RecentTopics />
+            </div>
           </div>
         </div>
         

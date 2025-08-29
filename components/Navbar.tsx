@@ -51,11 +51,21 @@ const Navbar: React.FC = () => {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-default bg-canvas">
-      <div className="mx-auto flex h-12 max-w-screen-xl items-center px-4">
-        <div className="mr-6 hidden md:flex">
+    <nav
+      className="sticky top-0 z-50 w-full border-b"
+      style={{
+        borderColor: 'var(--border-default)',
+        backgroundColor: 'var(--canvas)',
+        backdropFilter: 'saturate(180%) blur(5px)'
+      }}
+    >
+      <div className="mx-auto flex h-16 max-w-screen-xl items-center px-4 sm:px-6 lg:px-8">
+        <div className="mr-8 hidden md:flex">
           <Link className="mr-8 flex items-center" href="/">
-            <span className="text-base font-semibold text-foreground">
+            <span
+              className="text-base font-semibold"
+              style={{ color: 'var(--fg-default)' }}
+            >
               SIMPLET
             </span>
           </Link>
@@ -64,7 +74,18 @@ const Navbar: React.FC = () => {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm font-medium transition-colors py-2 px-2 rounded-md"
+                style={{
+                  color: 'var(--fg-muted)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--fg-default)';
+                  e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--fg-muted)';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
                 {item.label}
               </Link>
@@ -73,45 +94,76 @@ const Navbar: React.FC = () => {
         </div>
 
         <div className="flex flex-1 items-center justify-end">
-          <nav className="flex items-center space-x-4">
+          <nav className="flex items-center space-x-3">
             {session?.user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="relative h-7 w-7 rounded-full p-0 hover:bg-canvas-subtle border border-border hover:border-muted-foreground/30"
+                    className="relative h-8 w-8 rounded-full p-0 border"
+                    style={{
+                      borderColor: 'var(--border-default)',
+                      backgroundColor: 'var(--canvas)'
+                    }}
                   >
                     <Avatar className="h-6 w-6">
                       <AvatarImage
                         src={avatarUrl || "/prof-pic.png"}
                         alt={session.user.name || "User"}
                       />
-                      <AvatarFallback className="text-xs bg-canvas-subtle">
+                      <AvatarFallback
+                        className="text-xs"
+                        style={{
+                          backgroundColor: 'var(--canvas-subtle)',
+                          color: 'var(--fg-muted)'
+                        }}
+                      >
                         {session.user.name?.charAt(0).toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  className="w-48 bg-canvas border-border mt-1"
+                  className="w-48 mt-2 border"
                   align="end"
                   forceMount
+                  style={{
+                    backgroundColor: 'var(--canvas)',
+                    borderColor: 'var(--border-default)',
+                    borderRadius: '6px',
+                    boxShadow: '0 8px 24px rgba(1, 4, 9, 0.15)'
+                  }}
                 >
                   <DropdownMenuLabel className="font-normal px-3 py-2">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium text-foreground">
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: 'var(--fg-default)' }}
+                      >
                         {session.user.name}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p
+                        className="text-xs"
+                        style={{ color: 'var(--fg-muted)' }}
+                      >
                         {session.user.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-border" />
+                  <DropdownMenuSeparator
+                    style={{ backgroundColor: 'var(--border-default)' }}
+                  />
                   <DropdownMenuItem asChild>
                     <Link
                       href={`/users/${session.user.name}`}
-                      className="flex items-center px-3 py-2 text-sm hover:bg-canvas-subtle cursor-pointer"
+                      className="flex items-center px-3 py-2 text-sm cursor-pointer transition-colors"
+                      style={{ color: 'var(--fg-default)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
                     >
                       <User className="mr-2 h-4 w-4" />
                       <span>Profile</span>
@@ -120,16 +172,32 @@ const Navbar: React.FC = () => {
                   <DropdownMenuItem asChild>
                     <Link
                       href="/settings"
-                      className="flex items-center px-3 py-2 text-sm hover:bg-canvas-subtle cursor-pointer"
+                      className="flex items-center px-3 py-2 text-sm cursor-pointer transition-colors"
+                      style={{ color: 'var(--fg-default)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
                     >
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Settings</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-border" />
+                  <DropdownMenuSeparator
+                    style={{ backgroundColor: 'var(--border-default)' }}
+                  />
                   <DropdownMenuItem
-                    className="flex items-center px-3 py-2 text-sm hover:bg-canvas-subtle cursor-pointer"
+                    className="flex items-center px-3 py-2 text-sm cursor-pointer transition-colors"
                     onClick={() => signOut()}
+                    style={{ color: 'var(--fg-default)' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sign out</span>
@@ -140,16 +208,27 @@ const Navbar: React.FC = () => {
               <div className="flex items-center space-x-3">
                 <Link
                   href="/login"
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-sm font-medium transition-colors py-1.5 px-3 rounded-md"
+                  style={{ color: 'var(--fg-muted)' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'var(--fg-default)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'var(--fg-muted)';
+                  }}
                 >
                   Sign in
                 </Link>
-                <Link
-                  href="/register"
-                  className="btn btn-primary text-sm px-3 py-1.5"
+                <Button
+                  asChild
+                  variant="default"
+                  size="sm"
+                  className="text-sm"
                 >
-                  Sign up
-                </Link>
+                  <Link href="/register">
+                    Sign up
+                  </Link>
+                </Button>
               </div>
             )}
           </nav>

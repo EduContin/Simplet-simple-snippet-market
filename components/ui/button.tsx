@@ -5,24 +5,24 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-200 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer select-none",
+  "relative inline-flex items-center justify-center gap-1 whitespace-nowrap text-sm font-medium transition-all duration-75 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer select-none appearance-none text-decoration-none vertical-align-middle",
   {
     variants: {
       variant: {
-        default: "bg-primary border border-primary/20 text-primary-foreground hover:bg-primary/90 rounded-md shadow-sm",
+        default: "text-white bg-[--btn-primary-bg] border border-[rgba(47,129,247,0.4)] hover:bg-[--btn-primary-hover-bg] active:bg-[--btn-primary-active-bg] focus:outline-2 focus:outline-[--focus-outlineColor] focus:outline-offset-[-2px] shadow-[0_1px_0_rgba(27,31,36,0.04),inset_0_1px_0_rgba(255,255,255,0.25)] hover:shadow-[0_1px_0_rgba(27,31,36,0.04),inset_0_1px_0_rgba(255,255,255,0.25)] active:shadow-[inset_0_1px_0_rgba(0,0,0,0.15)]",
         destructive:
-          "bg-destructive border border-destructive/20 text-destructive-foreground hover:bg-destructive/90 rounded-md shadow-sm",
+          "text-white bg-[--destructive] border border-[rgba(248,81,73,0.4)] hover:bg-[#e5484d] active:bg-[#dc3d43] focus:outline-2 focus:outline-[--focus-outlineColor] focus:outline-offset-[-2px] shadow-[0_1px_0_rgba(27,31,36,0.04),inset_0_1px_0_rgba(255,255,255,0.25)]",
         outline:
-          "border border-border-default bg-canvas text-fg-default hover:bg-canvas-subtle rounded-md",
+          "text-[--fg-default] bg-[--canvas] border border-[--border-default] hover:bg-[--canvas-subtle] active:bg-[--canvas-inset] focus:outline-2 focus:outline-[--focus-outlineColor] focus:outline-offset-[-2px] shadow-[0_1px_0_rgba(27,31,36,0.04),inset_0_1px_0_rgba(255,255,255,0.25)]",
         secondary:
-          "bg-canvas-subtle border border-border-default text-fg-default hover:bg-canvas-inset rounded-md",
-        ghost: "hover:bg-canvas-subtle text-fg-default rounded-md",
-        link: "text-primary hover:underline underline-offset-4",
+          "text-[--fg-default] bg-[--btn-secondary-bg] border border-[--btn-secondary-border] hover:bg-[--btn-secondary-hover-bg] focus:outline-2 focus:outline-[--focus-outlineColor] focus:outline-offset-[-2px] shadow-[0_1px_0_rgba(27,31,36,0.04),inset_0_1px_0_rgba(255,255,255,0.25)]",
+        ghost: "text-[--fg-default] hover:bg-[--canvas-subtle] active:bg-[--canvas-inset]",
+        link: "text-[--accent] hover:underline underline-offset-4",
       },
       size: {
-        default: "h-8 px-3 py-1",
-        sm: "h-7 px-2 text-xs",
-        lg: "h-10 px-4 py-2",
+        default: "h-8 px-4 py-[5px] text-sm leading-5",
+        sm: "h-7 px-3 py-1 text-xs leading-4",
+        lg: "h-10 px-5 py-2 text-sm leading-5",
         icon: "h-8 w-8 p-0",
       },
     },

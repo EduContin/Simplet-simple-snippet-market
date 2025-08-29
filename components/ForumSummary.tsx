@@ -45,27 +45,33 @@ const ForumSummary: React.FC = () => {
   }, []);
 
   const LoadingSkeleton = () => (
-    <div className="border rounded-md mb-6" style={{
-      borderColor: 'var(--border-default)',
-      backgroundColor: 'var(--canvas)'
-    }}>
-      <div className="border-b px-4 py-3" style={{
+    <div
+      className="border rounded-md"
+      style={{
         borderColor: 'var(--border-default)',
-        backgroundColor: 'var(--canvas-subtle)'
-      }}>
+        backgroundColor: 'var(--canvas)'
+      }}
+    >
+      <div
+        className="border-b px-4 py-3"
+        style={{
+          borderColor: 'var(--border-default)',
+          backgroundColor: 'var(--canvas-subtle)'
+        }}
+      >
         <div className="flex items-center justify-between">
-          <div className="h-5 w-32 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
-          <div className="h-4 w-20 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
+          <div className="h-4 w-32 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
+          <div className="h-3 w-20 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
         </div>
       </div>
       <div className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
         {[1, 2, 3].map((i) => (
           <div key={i} className="flex items-center justify-between px-4 py-3">
             <div className="flex-1">
-              <div className="h-4 w-3/4 rounded animate-pulse mb-2" style={{ backgroundColor: 'var(--neutral-muted)' }} />
+              <div className="h-3.5 w-3/4 rounded animate-pulse mb-1.5" style={{ backgroundColor: 'var(--neutral-muted)' }} />
               <div className="h-3 w-1/2 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-6">
               <div className="h-3 w-8 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
               <div className="h-3 w-8 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
             </div>
@@ -113,19 +119,25 @@ const ForumSummary: React.FC = () => {
   const allCategories = sections.flatMap(section => section.categories);
 
   return (
-    <div className="border rounded-md mb-6" style={{
-      borderColor: 'var(--border-default)',
-      backgroundColor: 'var(--canvas)'
-    }}>
-      {/* Header - GitHub Style */}
-      <div className="border-b px-4 py-3" style={{
+    <div
+      className="border rounded-md"
+      style={{
         borderColor: 'var(--border-default)',
-        backgroundColor: 'var(--canvas-subtle)'
-      }}>
+        backgroundColor: 'var(--canvas)'
+      }}
+    >
+      {/* Header - GitHub Repository Header Style */}
+      <div
+        className="border-b px-4 py-3"
+        style={{
+          borderColor: 'var(--border-default)',
+          backgroundColor: 'var(--canvas-subtle)'
+        }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Folder className="h-5 w-5" style={{ color: 'var(--fg-muted)' }} />
-            <h2 className="text-base font-semibold" style={{ color: 'var(--fg-default)' }}>
+            <Folder className="h-4 w-4" style={{ color: 'var(--fg-muted)' }} />
+            <h2 className="text-sm font-semibold leading-5" style={{ color: 'var(--fg-default)' }}>
               Forum Categories
             </h2>
           </div>
@@ -142,12 +154,12 @@ const ForumSummary: React.FC = () => {
         </div>
       </div>
       
-      {/* Categories List - GitHub Repository Style */}
+      {/* Categories List - GitHub Repository List Style */}
       <div className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
         {allCategories.map((category) => (
           <div
             key={category.id}
-            className="group flex items-center justify-between px-4 py-3 transition-colors"
+            className="group flex items-center justify-between px-4 py-3 transition-colors cursor-pointer"
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
             }}
@@ -160,29 +172,29 @@ const ForumSummary: React.FC = () => {
                 <Folder className="h-4 w-4 flex-shrink-0" style={{ color: 'var(--fg-muted)' }} />
                 <Link
                   href={`/category/${slugify(category.name)}`}
-                  className="text-sm font-semibold hover:underline transition-colors truncate"
+                  className="text-sm font-semibold hover:underline transition-colors truncate leading-5"
                   style={{ color: 'var(--accent)' }}
                   title={category.name}
                 >
                   {category.name}
                 </Link>
               </div>
-              <p className="text-xs leading-5 ml-6 truncate" style={{ color: 'var(--fg-muted)' }}>
+              <p className="text-xs leading-4 ml-6 truncate" style={{ color: 'var(--fg-muted)' }}>
                 {category.description}
               </p>
             </div>
-            <div className="flex items-center gap-6 ml-4 flex-shrink-0">
-              <div className="text-xs text-center">
-                <div className="font-semibold" style={{ color: 'var(--fg-default)' }}>
+            <div className="flex items-center gap-8 ml-4 flex-shrink-0">
+              <div className="text-xs text-center min-w-[48px]">
+                <div className="font-semibold leading-4" style={{ color: 'var(--fg-default)' }}>
                   {category.thread_count}
                 </div>
-                <div style={{ color: 'var(--fg-muted)' }}>threads</div>
+                <div className="leading-4" style={{ color: 'var(--fg-muted)' }}>threads</div>
               </div>
-              <div className="text-xs text-center">
-                <div className="font-semibold" style={{ color: 'var(--fg-default)' }}>
+              <div className="text-xs text-center min-w-[48px]">
+                <div className="font-semibold leading-4" style={{ color: 'var(--fg-default)' }}>
                   {category.post_count}
                 </div>
-                <div style={{ color: 'var(--fg-muted)' }}>posts</div>
+                <div className="leading-4" style={{ color: 'var(--fg-muted)' }}>posts</div>
               </div>
             </div>
           </div>
