@@ -4,16 +4,113 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import AnnouncementsTopics from "@/components/AnnouncementsTopics";
+import RecentTopics from "@/components/RecentTopics";
 import {
   MessageSquare,
   Users,
-  TrendingUp,
   Folder,
-  ExternalLink,
-  Megaphone,
-  Clock,
-  User
+  ExternalLink
 } from "lucide-react";
+
+// Mock API functions for testing
+const mockGetAnnouncements = () => {
+  return Promise.resolve([
+    {
+      id: 1,
+      title: "Welcome to our redesigned forum! Check out the new GitHub-style interface",
+      username: "admin",
+      post_count: 15,
+      last_post_at: "2024-01-28T10:30:00Z",
+      anounts: true
+    },
+    {
+      id: 2,
+      title: "New community guidelines and moderation policies",
+      username: "moderator",
+      post_count: 8,
+      last_post_at: "2024-01-27T14:20:00Z",
+      anounts: true
+    },
+    {
+      id: 3,
+      title: "Server maintenance scheduled for this weekend",
+      username: "admin",
+      post_count: 4,
+      last_post_at: "2024-01-26T09:15:00Z",
+      anounts: true
+    }
+  ]);
+};
+
+const mockGetLatestThreads = () => {
+  return Promise.resolve([
+    {
+      id: 4,
+      title: "How to implement dark mode in React applications with Tailwind CSS",
+      username: "developer123",
+      category_name: "Programming",
+      post_count: 12,
+      last_post_at: "2024-01-28T16:45:00Z",
+      announcements: false
+    },
+    {
+      id: 5,
+      title: "Best practices for API design and documentation",
+      username: "techguru",
+      category_name: "Development",
+      post_count: 7,
+      last_post_at: "2024-01-28T15:30:00Z",
+      announcements: false
+    },
+    {
+      id: 6,
+      title: "Troubleshooting Docker deployment issues on production",
+      username: "devops_ninja",
+      category_name: "Help & Support",
+      post_count: 5,
+      last_post_at: "2024-01-28T13:15:00Z",
+      announcements: false
+    },
+    {
+      id: 7,
+      title: "Building a scalable microservices architecture",
+      username: "architect",
+      category_name: "Architecture",
+      post_count: 23,
+      last_post_at: "2024-01-28T11:00:00Z",
+      announcements: false
+    },
+    {
+      id: 8,
+      title: "Frontend performance optimization techniques",
+      username: "frontend_guru",
+      category_name: "Frontend",
+      post_count: 18,
+      last_post_at: "2024-01-28T09:30:00Z",
+      announcements: false
+    }
+  ]);
+};
+
+// Mock the API endpoints for testing
+if (typeof window !== 'undefined') {
+  const originalFetch = window.fetch;
+  window.fetch = (url, options) => {
+    if (url.includes('/api/v1/threads?announcements=true')) {
+      return Promise.resolve({
+        ok: true,
+        json: mockGetAnnouncements
+      });
+    } else if (url.includes('/api/v1/threads?page=1&pageSize=10')) {
+      return Promise.resolve({
+        ok: true,
+        json: mockGetLatestThreads
+      });
+    }
+    return originalFetch(url, options);
+  };
+}
 
 export default function TestDashboard() {
   // Mock data for testing
@@ -48,50 +145,6 @@ export default function TestDashboard() {
       thread_count: 73,
       post_count: 892,
       section: "Support"
-    }
-  ];
-
-  const mockAnnouncements = [
-    {
-      id: 1,
-      title: "Welcome to our redesigned forum! Check out the new GitHub-style interface",
-      username: "admin",
-      post_count: 15,
-      last_post_at: "2024-01-28T10:30:00Z"
-    },
-    {
-      id: 2,
-      title: "New community guidelines and moderation policies",
-      username: "moderator",
-      post_count: 8,
-      last_post_at: "2024-01-27T14:20:00Z"
-    }
-  ];
-
-  const mockRecentTopics = [
-    {
-      id: 3,
-      title: "How to implement dark mode in React applications",
-      username: "developer123",
-      category_name: "Programming",
-      post_count: 12,
-      last_post_at: "2024-01-28T16:45:00Z"
-    },
-    {
-      id: 4,
-      title: "Best practices for API design and documentation",
-      username: "techguru",
-      category_name: "Development",
-      post_count: 7,
-      last_post_at: "2024-01-28T15:30:00Z"
-    },
-    {
-      id: 5,
-      title: "Troubleshooting Docker deployment issues",
-      username: "devops_ninja",
-      category_name: "Help & Support",
-      post_count: 5,
-      last_post_at: "2024-01-28T13:15:00Z"
     }
   ];
 
@@ -222,141 +275,9 @@ export default function TestDashboard() {
           
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Announcements */}
-            <Card className="mb-8">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg">
-                      <Megaphone className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">Announcements</CardTitle>
-                      <CardDescription className="flex items-center gap-2">
-                        <Clock className="h-3 w-3" />
-                        Important updates
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <Badge
-                    variant="secondary"
-                    className="font-mono whitespace-nowrap bg-gradient-to-r from-orange-500/10 to-orange-600/10 text-orange-600 border-orange-200/20"
-                  >
-                    <Megaphone className="h-3 w-3 mr-1.5" />
-                    {mockAnnouncements.length} topics
-                  </Badge>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="p-0">
-                <div className="space-y-1">
-                  {mockAnnouncements.map((topic) => (
-                    <div
-                      key={topic.id}
-                      className="group flex items-center gap-4 p-4 hover:bg-muted/30 transition-all duration-200 border-b border-border/30 last:border-b-0"
-                    >
-                      <Avatar className="h-10 w-10 ring-2 ring-background shadow-sm">
-                        <AvatarFallback className="text-sm font-medium bg-gradient-to-br from-primary/20 to-secondary/20">
-                          {topic.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="font-semibold text-foreground hover:text-primary transition-colors duration-200 line-clamp-2 group-hover:underline cursor-pointer">
-                          {topic.title.length > 70 ? topic.title.slice(0, 67) + "..." : topic.title}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <User className="h-3 w-3" />
-                          <span className="font-medium hover:text-primary transition-colors cursor-pointer">
-                            {topic.username}
-                          </span>
-                          <div className="h-1 w-1 rounded-full bg-muted-foreground/40" />
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {timeSinceLastActivity(topic.last_post_at)}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3 text-sm">
-                        <Badge variant="secondary" className="font-mono">
-                          <Megaphone className="h-3 w-3 mr-1" />
-                          {topic.post_count}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Topics */}
-            <Card className="mb-8">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">Recent Topics</CardTitle>
-                      <CardDescription className="flex items-center gap-2">
-                        <Clock className="h-3 w-3" />
-                        Latest discussions
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <Badge 
-                    variant="secondary" 
-                    className="font-mono whitespace-nowrap bg-gradient-to-r from-blue-500/10 to-blue-600/10 text-blue-600 border-blue-200/20"
-                  >
-                    <MessageSquare className="h-3 w-3 mr-1.5" />
-                    {mockRecentTopics.length} topics
-                  </Badge>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="p-0">
-                <div className="space-y-1">
-                  {mockRecentTopics.map((thread) => (
-                    <div
-                      key={thread.id}
-                      className="group flex items-center gap-4 p-4 hover:bg-muted/30 transition-all duration-200 border-b border-border/30 last:border-b-0"
-                    >
-                      <Avatar className="h-10 w-10 ring-2 ring-background shadow-sm">
-                        <AvatarFallback className="text-sm font-medium bg-gradient-to-br from-primary/20 to-secondary/20">
-                          {thread.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="font-semibold text-foreground hover:text-primary transition-colors duration-200 line-clamp-2 group-hover:underline cursor-pointer">
-                          {thread.title.length > 70 ? thread.title.slice(0, 67) + "..." : thread.title}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <User className="h-3 w-3" />
-                          <span className="font-medium hover:text-primary transition-colors cursor-pointer">
-                            {thread.username}
-                          </span>
-                          <div className="h-1 w-1 rounded-full bg-muted-foreground/40" />
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {timeSinceLastActivity(thread.last_post_at)}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3 text-sm">
-                        <Badge variant="secondary" className="font-mono">
-                          <MessageSquare className="h-3 w-3 mr-1" />
-                          {thread.post_count}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            {/* Use our updated components with GitHub-style formatting */}
+            <AnnouncementsTopics />
+            <RecentTopics />
           </div>
         </div>
         

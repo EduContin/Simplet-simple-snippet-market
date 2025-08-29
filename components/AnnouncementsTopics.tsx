@@ -2,17 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Megaphone, Clock, User, ExternalLink } from "lucide-react";
+import { Megaphone } from "lucide-react";
 import { slugify } from "@/models/slugify";
 
 interface Thread {
@@ -93,30 +84,29 @@ const AnnouncementsTopics: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Card className="mb-8">
-        <CardHeader className="pb-4">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
-            <div>
-              <div className="h-6 w-40 bg-muted rounded animate-pulse mb-2" />
-              <div className="h-4 w-32 bg-muted rounded animate-pulse" />
-            </div>
+      <div className="border border-border rounded-lg bg-background mb-6">
+        {/* Header */}
+        <div className="border-b border-border px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="h-5 w-24 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-16 bg-muted rounded animate-pulse" />
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-4 p-4">
-                <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-5 w-3/4 bg-muted rounded animate-pulse" />
-                  <div className="h-4 w-1/2 bg-muted rounded animate-pulse" />
-                </div>
+        </div>
+        
+        {/* Loading items */}
+        <div className="divide-y divide-border">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3">
+              <div className="h-5 w-5 rounded-full bg-muted animate-pulse flex-shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+                <div className="h-3 w-1/2 bg-muted rounded animate-pulse" />
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <div className="h-3 w-12 bg-muted rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
@@ -125,111 +115,74 @@ const AnnouncementsTopics: React.FC = () => {
   }
 
   return (
-    <Card className="mb-8">
-      <CardHeader className="pb-4">
+    <div className="border border-border rounded-lg bg-background mb-6">
+      {/* Header */}
+      <div className="border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg">
-              <Megaphone className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-xl">Announcements</CardTitle>
-              <CardDescription className="flex items-center gap-2">
-                <Clock className="h-3 w-3" />
-                Important updates
-              </CardDescription>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge
-              variant="secondary"
-              className="font-mono whitespace-nowrap bg-gradient-to-r from-orange-500/10 to-orange-600/10 text-orange-600 border-orange-200/20 hover:from-orange-500/20 hover:to-orange-600/20 transition-all duration-300 shadow-sm"
-            >
-              <Megaphone className="h-3 w-3 mr-1.5" />
-              {announcements.length}{" "}
-              {announcements.length === 1 ? "topic" : "topics"}
-            </Badge>
-          </div>
+          <h3 className="text-sm font-semibold text-foreground">
+            Announcements
+          </h3>
+          <span className="text-xs text-muted-foreground">
+            {announcements.length} {announcements.length === 1 ? "topic" : "topics"}
+          </span>
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent className="p-0">
-        <div className="space-y-1">
-          <AnimatePresence>
-            {announcements.length > 0 ? (
-              announcements.map((topic, index) => (
-                <motion.div
-                  key={topic.id}
-                  initial={{ opacity: 0, y: -10, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                  transition={{ duration: 0.3, delay: index * 0.02 }}
-                  className="group"
-                >
-                  <div className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-all duration-200 border-b border-border/30 last:border-b-0">
-                    <Avatar className="h-10 w-10 ring-2 ring-background shadow-sm">
-                      <AvatarImage src={`/api/avatar/${topic.username}`} alt={topic.username} />
-                      <AvatarFallback className="text-sm font-medium bg-gradient-to-br from-primary/20 to-secondary/20">
-                        {topic.username.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 min-w-0 space-y-1">
+      {/* List */}
+      <div className="divide-y divide-border">
+        {announcements.length > 0 ? (
+          announcements.map((topic) => (
+            <div
+              key={topic.id}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+            >
+              {/* Avatar */}
+              <Avatar className="h-5 w-5 flex-shrink-0">
+                <AvatarImage src={`/api/avatar/${topic.username}`} alt={topic.username} />
+                <AvatarFallback className="text-xs bg-muted">
+                  {topic.username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/thread/${slugify(topic.title)}-${topic.id}`}
+                      className="text-sm font-medium text-foreground hover:text-blue-600 transition-colors leading-5"
+                      title={topic.title}
+                    >
+                      {limitTitle(topic.title, 60)}
+                    </Link>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                       <Link
-                        href={`/thread/${slugify(topic.title)}-${topic.id}`}
-                        className="font-semibold text-foreground hover:text-primary transition-colors duration-200 line-clamp-2 group-hover:underline"
-                        title={topic.title}
+                        href={`/users/${topic.username}`}
+                        className="hover:text-blue-600 transition-colors"
                       >
-                        {limitTitle(topic.title)}
+                        {topic.username}
                       </Link>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <User className="h-3 w-3" />
-                        <Link
-                          href={`/users/${topic.username}`}
-                          className="font-medium hover:text-primary transition-colors"
-                        >
-                          {topic.username}
-                        </Link>
-                        <div className="h-1 w-1 rounded-full bg-muted-foreground/40" />
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {timeSinceLastActivity(topic.last_post_at)}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 text-sm">
-                      <Badge variant="secondary" className="font-mono">
-                        <Megaphone className="h-3 w-3 mr-1" />
-                        {topic.post_count}
-                      </Badge>
-                      <Link
-                        href={`/thread/${slugify(topic.title)}-${topic.id}`}
-                        className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-primary hover:scale-110"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Link>
+                      <span>•</span>
+                      <span>{timeSinceLastActivity(topic.last_post_at)}</span>
                     </div>
                   </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <div className="mb-4">
-                  <Megaphone className="h-16 w-16 text-muted-foreground/50 mx-auto" />
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{topic.post_count} posts</span>
+                  </div>
                 </div>
-                <p className="text-muted-foreground text-lg">
-                  No announcements at this time
-                </p>
-                <p className="text-muted-foreground/70 text-sm mt-2">
-                  Important updates will appear here when available
-                </p>
               </div>
-            )}
-          </AnimatePresence>
-        </div>
-      </CardContent>
-    </Card>
+            </div>
+          ))
+        ) : (
+          <div className="px-4 py-8 text-center">
+            <div className="text-muted-foreground">
+              <Megaphone className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No announcements at this time</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

@@ -2,20 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 import { slugify } from "@/models/slugify";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  MessageSquare, 
-  Clock, 
-  TrendingUp, 
-  User,
-  ExternalLink,
-  RefreshCw
-} from "lucide-react";
+import { MessageSquare, RefreshCw } from "lucide-react";
 
 interface Thread {
   id: number;
@@ -69,38 +58,32 @@ const timeSinceLastActivity = (lastActivity: string): string => {
 };
 
 const LoadingSkeleton = () => (
-  <Card className="mb-8">
-    <CardHeader className="pb-4">
-      <div className="flex items-center gap-3">
-        <Skeleton className="h-8 w-8 rounded-full" />
-        <div className="space-y-2">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-4 w-64" />
+  <div className="border border-border rounded-lg bg-background mb-6">
+    {/* Header */}
+    <div className="border-b border-border px-4 py-3">
+      <div className="flex items-center justify-between">
+        <div className="h-5 w-24 bg-muted rounded animate-pulse" />
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+          <RefreshCw className="h-4 w-4 text-muted-foreground animate-spin" />
         </div>
       </div>
-    </CardHeader>
-    <CardContent className="space-y-4">
+    </div>
+    
+    {/* Loading items */}
+    <div className="divide-y divide-border">
       {[1, 2, 3, 4, 5].map((i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: i * 0.1 }}
-          className="flex items-center gap-4 p-4 border rounded-xl bg-gradient-to-r from-background to-muted/20"
-        >
-          <Skeleton className="h-10 w-10 rounded-full" />
-          <div className="space-y-2 flex-1">
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
+        <div key={i} className="flex items-center gap-3 px-4 py-3">
+          <div className="h-5 w-5 rounded-full bg-muted animate-pulse flex-shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+            <div className="h-3 w-1/2 bg-muted rounded animate-pulse" />
           </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-6 w-16 rounded-full" />
-            <Skeleton className="h-6 w-20 rounded-full" />
-          </div>
-        </motion.div>
+          <div className="h-3 w-12 bg-muted rounded animate-pulse" />
+        </div>
       ))}
-    </CardContent>
-  </Card>
+    </div>
+  </div>
 );
 
 function RecentTopics() {
@@ -138,133 +121,110 @@ function RecentTopics() {
 
   if (error) {
     return (
-      <Card className="mb-8">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-xl">
-            <div className="p-2 rounded-full bg-gradient-to-br from-destructive/20 to-destructive/10">
-              <MessageSquare className="h-5 w-5 text-destructive" />
-            </div>
-            Recent Topics
-          </CardTitle>
-          <CardDescription>Latest discussions from the community</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-12">
-            <div className="mb-4">
-              <RefreshCw className="h-16 w-16 text-muted-foreground/50 mx-auto" />
-            </div>
-            <p className="text-destructive text-lg">Failed to load recent topics</p>
-            <p className="text-muted-foreground/70 text-sm mt-2">Please try refreshing the page</p>
+      <div className="border border-border rounded-lg bg-background mb-6">
+        {/* Header */}
+        <div className="border-b border-border px-4 py-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">
+              Recent Topics
+            </h3>
+            <span className="text-xs text-destructive">Error</span>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        
+        {/* Error content */}
+        <div className="px-4 py-8 text-center">
+          <div className="text-muted-foreground">
+            <RefreshCw className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm text-destructive">Failed to load recent topics</p>
+            <p className="text-xs text-muted-foreground mt-1">Please try refreshing the page</p>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="mb-8">
-      <CardHeader className="pb-4">
+    <div className="border border-border rounded-lg bg-background mb-6">
+      {/* Header */}
+      <div className="border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 shadow-lg">
-              <TrendingUp className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-xl">Recent Topics</CardTitle>
-              <CardDescription className="flex items-center gap-2">
-                <Clock className="h-3 w-3" />
-                Latest discussions
-              </CardDescription>
-            </div>
-          </div>
+          <h3 className="text-sm font-semibold text-foreground">
+            Recent Topics
+          </h3>
           <div className="flex items-center gap-2">
-            <Badge 
-              variant="secondary" 
-              className="font-mono whitespace-nowrap bg-gradient-to-r from-blue-500/10 to-blue-600/10 text-blue-600 border-blue-200/20 hover:from-blue-500/20 hover:to-blue-600/20 transition-all duration-300 shadow-sm"
-            >
-              <MessageSquare className="h-3 w-3 mr-1.5" />
-              {threads.length} {threads.length === 1 ? 'topic' : 'topics'}
-            </Badge>
+            <span className="text-xs text-muted-foreground">
+              {threads.length} {threads.length === 1 ? "topic" : "topics"}
+            </span>
             {isRefreshing && (
               <RefreshCw className="h-4 w-4 text-muted-foreground animate-spin" />
             )}
           </div>
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent className="p-0">
-        <div className="space-y-1">
-          <AnimatePresence>
-            {threads.length > 0 ? (
-              threads.map((thread, index) => (
-                <motion.div
-                  key={thread.id}
-                  initial={{ opacity: 0, y: -10, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                  transition={{ duration: 0.3, delay: index * 0.02 }}
-                  className="group"
-                >
-                  <div className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-all duration-200 border-b border-border/30 last:border-b-0">
-                    <Avatar className="h-10 w-10 ring-2 ring-background shadow-sm">
-                      <AvatarImage src={`/api/avatar/${thread.username}`} alt={thread.username} />
-                      <AvatarFallback className="text-sm font-medium bg-gradient-to-br from-primary/20 to-secondary/20">
-                        {thread.username.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 min-w-0 space-y-1">
+      {/* List */}
+      <div className="divide-y divide-border">
+        {threads.length > 0 ? (
+          threads.map((thread) => (
+            <div
+              key={thread.id}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+            >
+              {/* Avatar */}
+              <Avatar className="h-5 w-5 flex-shrink-0">
+                <AvatarImage src={`/api/avatar/${thread.username}`} alt={thread.username} />
+                <AvatarFallback className="text-xs bg-muted">
+                  {thread.username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/thread/${slugify(thread.title)}-${thread.id}`}
+                      className="text-sm font-medium text-foreground hover:text-blue-600 transition-colors leading-5"
+                      title={thread.title}
+                    >
+                      {limitTitle(thread.title, 60)}
+                    </Link>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                       <Link
-                        href={`/thread/${slugify(thread.title)}-${thread.id}`}
-                        className="font-semibold text-foreground hover:text-primary transition-colors duration-200 line-clamp-2 group-hover:underline"
-                        title={thread.title}
+                        href={`/users/${thread.username}`}
+                        className="hover:text-blue-600 transition-colors"
                       >
-                        {limitTitle(thread.title)}
+                        {thread.username}
                       </Link>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <User className="h-3 w-3" />
-                        <Link
-                          href={`/users/${thread.username}`}
-                          className="font-medium hover:text-primary transition-colors"
-                        >
-                          {thread.username}
-                        </Link>
-                        <div className="h-1 w-1 rounded-full bg-muted-foreground/40" />
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {timeSinceLastActivity(thread.last_post_at)}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 text-sm">
-                      <Badge variant="secondary" className="font-mono">
-                        <MessageSquare className="h-3 w-3 mr-1" />
-                        {thread.post_count}
-                      </Badge>
-                      <Link
-                        href={`/thread/${slugify(thread.title)}-${thread.id}`}
-                        className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-primary hover:scale-110"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Link>
+                      <span>•</span>
+                      <span>{timeSinceLastActivity(thread.last_post_at)}</span>
+                      {thread.category_name && (
+                        <>
+                          <span>•</span>
+                          <span className="truncate">{thread.category_name}</span>
+                        </>
+                      )}
                     </div>
                   </div>
-                </motion.div>
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <div className="mb-4">
-                  <MessageSquare className="h-16 w-16 text-muted-foreground/50 mx-auto" />
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{thread.post_count} posts</span>
+                  </div>
                 </div>
-                <p className="text-muted-foreground text-lg">No recent topics found</p>
-                <p className="text-muted-foreground/70 text-sm mt-2">Start a new discussion to get the conversation going!</p>
+              </div>
             </div>
-            )}
-          </AnimatePresence>
-        </div>
-      </CardContent>
-    </Card>
+          ))
+        ) : (
+          <div className="px-4 py-8 text-center">
+            <div className="text-muted-foreground">
+              <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No recent topics found</p>
+              <p className="text-xs mt-1">Start a new discussion to get the conversation going!</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
