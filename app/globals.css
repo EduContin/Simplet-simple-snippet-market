@@ -68,8 +68,8 @@
       sans-serif,
       "Apple Color Emoji",
       "Segoe UI Emoji";
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 16px;
+    line-height: 1.6;
   }
 
   body {
@@ -91,8 +91,8 @@
     border: 1px solid var(--border);
     color: var(--foreground);
     border-radius: var(--radius);
-    font-size: 14px;
-    line-height: 20px;
+    font-size: 16px;
+    line-height: 24px;
     transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   }
   
@@ -130,10 +130,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 5px 16px;
-    font-size: 14px;
+    padding: 10px 20px;
+    font-size: 16px;
     font-weight: 500;
-    line-height: 20px;
+    line-height: 24px;
     white-space: nowrap;
     vertical-align: middle;
     cursor: pointer;
@@ -198,29 +198,29 @@
   }
 
   .card-header {
-    padding: 16px;
+    padding: 20px;
     border-bottom: 1px solid var(--border-default);
     background-color: var(--canvas-subtle);
     border-radius: 6px 6px 0 0;
   }
 
   .card-content {
-    padding: 16px;
+    padding: 20px;
   }
 
   .card-title {
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 600;
-    line-height: 1.25;
+    line-height: 1.4;
     margin: 0;
     color: var(--fg-default);
   }
 
   .card-description {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 400;
-    line-height: 1.33;
-    margin: 4px 0 0 0;
+    line-height: 1.5;
+    margin: 8px 0 0 0;
     color: var(--fg-muted);
   }
 
@@ -228,9 +228,9 @@
   .input {
     display: block;
     width: 100%;
-    padding: 5px 12px;
-    font-size: 14px;
-    line-height: 20px;
+    padding: 12px 16px;
+    font-size: 16px;
+    line-height: 24px;
     color: var(--fg-default);
     background-color: var(--canvas);
     border: 1px solid var(--border-default);
@@ -287,11 +287,11 @@
 
 /* GitHub-style utility classes */
 .text-primary {
-  color: var(--primary);
+  color: var(--accent);
 }
 
 .text-muted {
-  color: var(--muted-foreground);
+  color: var(--fg-muted);
 }
 
 .text-success {
@@ -311,20 +311,36 @@
 }
 
 .border-default {
-  border-color: var(--border);
+  border-color: var(--border-default);
 }
 
 .transition {
-  transition: all 0.2s ease-in-out;
+  transition: all 80ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 
-/* GitHub-style hover effects */
-.hover-grow:hover {
-  transform: scale(1.02);
+/* GitHub-exact focus outline */
+.focus-outline {
+  outline: 2px solid var(--focus-outlineColor);
+  outline-offset: -2px;
 }
 
-.hover-shadow:hover {
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+/* GitHub-style container shadows */
+.github-shadow {
+  box-shadow: 0 8px 24px rgba(1, 4, 9, 0.15);
+}
+
+.github-shadow-sm {
+  box-shadow: 0 1px 0 rgba(27, 31, 36, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* GitHub repository list hover */
+.github-repo-hover:hover {
+  background-color: var(--canvas-subtle);
+}
+
+/* GitHub button active state */
+.github-btn-active:active {
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.15);
 }
 
 /* Hide scrollbar for horizontal tabs */
@@ -349,8 +365,8 @@
 /* GitHub-style content elements */
 blockquote {
   border-left: 4px solid var(--border-muted);
-  padding-left: 16px;
-  margin: 16px 0;
+  padding-left: 20px;
+  margin: 20px 0;
   color: var(--muted-foreground);
   font-style: italic;
 }
@@ -359,10 +375,10 @@ pre {
   background-color: var(--canvas-subtle);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 20px;
   overflow-x: auto;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.45;
 }
 
@@ -371,7 +387,7 @@ code {
   border-radius: 3px;
   padding: 2px 4px;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 pre code {
@@ -388,7 +404,7 @@ pre code {
   border-radius: var(--radius);
   user-select: none;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .overflow-wrap-break-word {

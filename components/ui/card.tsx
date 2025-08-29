@@ -28,7 +28,7 @@ const CardHeader = React.forwardRef<
     ref={ref}
     className={cn(
       // GitHub spacing: 16px padding with bottom border
-      "flex flex-col space-y-1.5 p-4 border-b border-[--border-default] last:border-b-0 bg-[--canvas-subtle] first:rounded-t-md",
+      "flex flex-col space-y-2 p-6 border-b border-[--border-default] last:border-b-0 bg-[--canvas-subtle] first:rounded-t-md",
       className
     )}
     {...props}
@@ -44,7 +44,7 @@ const CardTitle = React.forwardRef<
     ref={ref}
     className={cn(
       // GitHub typography: 14px, semi-bold, precise line height
-      "text-sm font-semibold leading-5 tracking-normal text-[--fg-default] m-0",
+      "text-lg font-semibold leading-6 tracking-normal text-[--fg-default] m-0",
       className
     )}
     {...props}
@@ -60,7 +60,7 @@ const CardDescription = React.forwardRef<
     ref={ref}
     className={cn(
       // GitHub muted text: 12px, normal weight
-      "text-xs font-normal leading-4 text-[--fg-muted] mt-1",
+      "text-sm font-normal leading-5 text-[--fg-muted] mt-2",
       className
     )}
     {...props}
@@ -76,7 +76,7 @@ const CardContent = React.forwardRef<
     ref={ref}
     className={cn(
       // GitHub content spacing: 16px padding with proper spacing
-      "p-4 space-y-3",
+      "p-6 space-y-4",
       className
     )}
     {...props}
@@ -92,7 +92,7 @@ const CardFooter = React.forwardRef<
     ref={ref}
     className={cn(
       // GitHub footer: flex layout with 16px padding and top border
-      "flex items-center gap-3 p-4 border-t border-[--border-default] first:border-t-0 bg-[--canvas-subtle] last:rounded-b-md",
+      "flex items-center gap-4 p-6 border-t border-[--border-default] first:border-t-0 bg-[--canvas-subtle] last:rounded-b-md",
       className
     )}
     {...props}

@@ -93,7 +93,7 @@ const AnnouncementsTopics: React.FC = () => {
       >
         {/* Header */}
         <div
-          className="border-b px-3 py-2"
+          className="border-b px-4 py-3"
           style={{
             borderColor: 'var(--border-default)',
             backgroundColor: 'var(--canvas-subtle)'
@@ -108,8 +108,8 @@ const AnnouncementsTopics: React.FC = () => {
         {/* Loading items */}
         <div className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-start gap-2 px-3 py-2">
-              <div className="h-4 w-4 rounded-full animate-pulse flex-shrink-0 mt-0.5" style={{ backgroundColor: 'var(--neutral-muted)' }} />
+            <div key={i} className="flex items-start gap-3 px-4 py-3">
+              <div className="h-6 w-6 rounded-full animate-pulse flex-shrink-0 mt-0.5" style={{ backgroundColor: 'var(--neutral-muted)' }} />
               <div className="flex-1 space-y-1">
                 <div className="h-3 w-3/4 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
                 <div className="h-2.5 w-1/2 rounded animate-pulse" style={{ backgroundColor: 'var(--neutral-muted)' }} />
@@ -136,7 +136,7 @@ const AnnouncementsTopics: React.FC = () => {
     >
       {/* Header - GitHub Sidebar Widget Style */}
       <div
-        className="border-b px-3 py-2"
+        className="border-b px-4 py-3"
         style={{
           borderColor: 'var(--border-default)',
           backgroundColor: 'var(--canvas-subtle)'
@@ -144,8 +144,8 @@ const AnnouncementsTopics: React.FC = () => {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Megaphone className="h-3.5 w-3.5" style={{ color: 'var(--fg-muted)' }} />
-            <h3 className="text-xs font-semibold leading-4" style={{ color: 'var(--fg-default)' }}>
+            <Megaphone className="h-4 w-4" style={{ color: 'var(--fg-muted)' }} />
+            <h3 className="text-sm font-semibold leading-5" style={{ color: 'var(--fg-default)' }}>
               Announcements
             </h3>
           </div>
