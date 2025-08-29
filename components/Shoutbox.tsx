@@ -5,11 +5,7 @@ import { useSession } from "next-auth/react";
 import { io } from "socket.io-client";
 import Image from "next/image";
 import customEmojis from "@/models/custom-emojis";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -230,87 +226,124 @@ const Shoutbox = () => {
   const onlineUsers = Array.from(new Set(messages.slice(0, 10).map(msg => msg.username)));
 
   return (
-    <Card className="mb-8 border border-gray-300 rounded-lg">
-      <CardHeader className="border-b border-gray-200 bg-gray-50 py-3 px-4">
+    <div className="border rounded-md" style={{ 
+      borderColor: 'var(--border-default)', 
+      backgroundColor: 'var(--canvas)' 
+    }}>
+      {/* Header - GitHub Style */}
+      <div className="border-b px-4 py-3" style={{ 
+        borderColor: 'var(--border-default)', 
+        backgroundColor: 'var(--canvas-subtle)' 
+      }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <MessageCircle className="h-5 w-5 text-gray-600" />
+            <MessageCircle className="h-5 w-5" style={{ color: 'var(--fg-muted)' }} />
             <div>
-              <CardTitle className="text-lg font-semibold text-gray-900">Live Shoutbox</CardTitle>
-              <CardDescription className="text-sm text-gray-600">
+              <h3 className="text-base font-semibold leading-6" style={{ color: 'var(--fg-default)' }}>
+                Live Shoutbox
+              </h3>
+              <p className="text-sm leading-5" style={{ color: 'var(--fg-muted)' }}>
                 Real-time conversations
-              </CardDescription>
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-gray-500" />
-              <Badge variant="outline" className="text-xs border-gray-300">
+              <Users className="h-4 w-4" style={{ color: 'var(--fg-muted)' }} />
+              <span className="text-xs px-2 py-1 rounded border" style={{ 
+                color: 'var(--fg-muted)', 
+                borderColor: 'var(--border-default)',
+                backgroundColor: 'var(--canvas)' 
+              }}>
                 {onlineUsers.length} active
-              </Badge>
+              </span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-100"
+              className="h-8 w-8 p-0 rounded border transition-colors"
+              style={{ 
+                borderColor: 'var(--border-default)',
+                backgroundColor: 'var(--canvas)',
+                color: 'var(--fg-muted)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--canvas)';
+              }}
             >
               {isExpanded ? (
                 <Minimize2 className="h-4 w-4" />
               ) : (
                 <Maximize2 className="h-4 w-4" />
               )}
-            </Button>
+            </button>
           </div>
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent className="p-0">
-        {/* Messages Area */}
-        <ScrollArea
-          className={`px-4 ${isExpanded ? 'h-96' : 'h-48'}`}
-        >
+      {/* Messages Area - GitHub Style */}
+      <div className="p-0">
+        <ScrollArea className={`px-4 ${isExpanded ? 'h-96' : 'h-48'}`}>
           <div className="space-y-0 py-4">
             {messages.length > 0 ? (
               messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className="group relative"
-                >
-                  <div className="flex items-start gap-3 p-3 border-b border-gray-100 hover:bg-gray-50">
-                    <Avatar className="h-8 w-8">
+                <div key={msg.id} className="group relative">
+                  <div 
+                    className="flex items-start gap-3 py-3 border-b last:border-b-0 transition-colors"
+                    style={{ borderColor: 'var(--border-muted)' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <Avatar className="h-8 w-8 flex-shrink-0">
                       <AvatarImage
                         src={msg.avatar_url || "/prof-pic.png"}
                         alt={msg.username}
                       />
-                      <AvatarFallback className="text-xs font-medium bg-gray-200 text-gray-700">
+                      <AvatarFallback 
+                        className="text-xs font-medium"
+                        style={{ 
+                          backgroundColor: 'var(--canvas-subtle)', 
+                          color: 'var(--fg-muted)' 
+                        }}
+                      >
                         {msg.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm text-gray-900">
+                        <span className="font-medium text-sm" style={{ color: 'var(--fg-default)' }}>
                           {msg.username}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs" style={{ color: 'var(--fg-muted)' }}>
                           now
                         </span>
                       </div>
-                      <div className="text-sm text-gray-700 leading-relaxed break-words">
+                      <div className="text-sm leading-5 break-words" style={{ color: 'var(--fg-default)' }}>
                         {renderMessageWithEmojis(msg.message)}
                       </div>
                     </div>
                     
                     {session && session.user.name === msg.username && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
                         onClick={() => handleEditMessage(msg.id)}
-                        className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0 hover:bg-gray-100"
+                        className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0 rounded transition-all"
+                        style={{ color: 'var(--fg-muted)' }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
                       >
                         <Edit className="h-3 w-3" />
-                      </Button>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -318,67 +351,119 @@ const Shoutbox = () => {
             ) : (
               <div className="text-center py-12">
                 <div className="mb-4">
-                  <MessageCircle className="h-12 w-12 text-gray-300 mx-auto" />
+                  <MessageCircle className="h-12 w-12 mx-auto opacity-40" style={{ color: 'var(--fg-muted)' }} />
                 </div>
-                <p className="text-gray-500">No messages yet.</p>
-                <p className="text-gray-400 text-sm mt-1">Be the first to start a conversation!</p>
+                <p className="text-sm" style={{ color: 'var(--fg-muted)' }}>No messages yet.</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--fg-subtle)' }}>Be the first to start a conversation!</p>
               </div>
             )}
           </div>
         </ScrollArea>
 
-        {/* Input Area */}
-        <div className="border-t border-gray-200 bg-white p-4">
+        {/* Input Area - GitHub Style */}
+        <div className="border-t p-4" style={{ 
+          borderColor: 'var(--border-default)', 
+          backgroundColor: 'var(--canvas)' 
+        }}>
           {editingMessageId && (
-            <div className="mb-3 flex items-center gap-2 text-sm text-gray-600 bg-yellow-50 border border-yellow-200 rounded p-2">
+            <div 
+              className="mb-3 flex items-center gap-2 text-sm rounded p-2 border"
+              style={{ 
+                color: 'var(--fg-default)',
+                backgroundColor: '#fef3cd',
+                borderColor: '#d4b106'
+              }}
+            >
               <Edit className="h-3 w-3" />
               <span>Editing message</span>
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={handleCancelEdit}
-                className="ml-auto h-6 px-2 text-xs hover:bg-yellow-100"
+                className="ml-auto h-6 px-2 text-xs rounded transition-colors"
+                style={{ color: 'var(--fg-default)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
-                <X className="h-3 w-3 mr-1" />
+                <X className="h-3 w-3 mr-1 inline" />
                 Cancel
-              </Button>
+              </button>
             </div>
           )}
           
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <Input
+              <input
                 ref={inputRef}
                 type="text"
                 value={inputMessage}
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
-                className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full pr-12 px-3 py-2 text-sm rounded border transition-colors"
+                style={{ 
+                  backgroundColor: 'var(--canvas)',
+                  borderColor: 'var(--border-default)',
+                  color: 'var(--fg-default)'
+                }}
                 placeholder={
                   editingMessageId ? "Edit your message..." : "Type your message..."
                 }
                 maxLength={MAX_MESSAGE_LENGTH}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--accent)';
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(47, 129, 247, 0.12)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-default)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'var(--fg-muted)' }}>
                 {inputMessage.length}/{MAX_MESSAGE_LENGTH}
               </div>
             </div>
             
             <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-10 w-10 p-0 border-gray-300 hover:bg-gray-100">
+                <button 
+                  className="h-10 w-10 p-0 rounded border transition-colors"
+                  style={{ 
+                    borderColor: 'var(--border-default)',
+                    backgroundColor: 'var(--canvas)',
+                    color: 'var(--fg-muted)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--canvas)';
+                  }}
+                >
                   <Smile className="h-4 w-4" />
-                </Button>
+                </button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-3 border-gray-300" align="end">
+              <PopoverContent 
+                className="w-80 p-3 border" 
+                align="end"
+                style={{ 
+                  borderColor: 'var(--border-default)',
+                  backgroundColor: 'var(--canvas)',
+                }}
+              >
                 <div className="grid grid-cols-8 gap-1">
                   {Object.entries(customEmojis).map(([emoji, url]) => (
-                    <Button
+                    <button
                       key={emoji}
-                      variant="ghost"
-                      size="sm"
                       onClick={() => handleEmojiClick(emoji)}
-                      className="h-8 w-8 p-0 hover:bg-gray-100 rounded"
+                      className="h-8 w-8 p-0 rounded transition-colors"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
                     >
                       <Image
                         src={url}
@@ -388,34 +473,60 @@ const Shoutbox = () => {
                         height={20}
                         unoptimized
                       />
-                    </Button>
+                    </button>
                   ))}
                 </div>
               </PopoverContent>
             </Popover>
             
-            <Button
+            <button
               onClick={editingMessageId ? handleUpdateMessage : handleSendMessage}
               disabled={!inputMessage.trim() || inputMessage.length > MAX_MESSAGE_LENGTH}
-              className="h-10 px-4 bg-green-600 hover:bg-green-700 text-white border-0"
+              className="h-10 px-4 rounded border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                backgroundColor: 'var(--success)',
+                borderColor: 'var(--success)',
+                color: '#ffffff'
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.backgroundColor = '#2ea043';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.backgroundColor = 'var(--success)';
+                }
+              }}
             >
-              {editingMessageId ? (
-                <Check className="h-4 w-4 mr-2" />
-              ) : (
-                <Send className="h-4 w-4 mr-2" />
-              )}
-              {editingMessageId ? "Update" : "Send"}
-            </Button>
+              <div className="flex items-center gap-2">
+                {editingMessageId ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                <span className="text-sm font-medium">
+                  {editingMessageId ? "Update" : "Send"}
+                </span>
+              </div>
+            </button>
           </div>
           
           {errorMessage && (
-            <div className="mt-2 p-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded">
+            <div 
+              className="mt-2 p-2 text-xs rounded border"
+              style={{ 
+                color: 'var(--destructive)',
+                backgroundColor: '#ffeaea',
+                borderColor: 'var(--destructive)'
+              }}
+            >
               {errorMessage}
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
