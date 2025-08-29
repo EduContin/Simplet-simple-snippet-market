@@ -115,31 +115,31 @@ const AnnouncementsTopics: React.FC = () => {
   }
 
   return (
-    <div className="border border-border rounded-lg bg-background mb-6">
+    <div className="border border-border-default rounded-md bg-canvas mb-4">
       {/* Header */}
-      <div className="border-b border-border px-4 py-3">
+      <div className="border-b border-border-default px-4 py-2 bg-canvas-subtle">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="text-sm font-semibold" style={{ color: 'var(--fg-default)' }}>
             Announcements
           </h3>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs" style={{ color: 'var(--fg-muted)' }}>
             {announcements.length} {announcements.length === 1 ? "topic" : "topics"}
           </span>
         </div>
       </div>
       
       {/* List */}
-      <div className="divide-y divide-border">
+      <div className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
         {announcements.length > 0 ? (
           announcements.map((topic) => (
             <div
               key={topic.id}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+              className="flex items-center gap-3 px-4 py-2 hover:bg-canvas-subtle transition-colors cursor-pointer"
             >
               {/* Avatar */}
-              <Avatar className="h-5 w-5 flex-shrink-0">
+              <Avatar className="h-4 w-4 flex-shrink-0">
                 <AvatarImage src={`/api/avatar/${topic.username}`} alt={topic.username} />
-                <AvatarFallback className="text-xs bg-muted">
+                <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--canvas-subtle)', color: 'var(--fg-muted)' }}>
                   {topic.username.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -150,15 +150,17 @@ const AnnouncementsTopics: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/thread/${slugify(topic.title)}-${topic.id}`}
-                      className="text-sm font-medium text-foreground hover:text-blue-600 transition-colors leading-5"
+                      className="text-sm font-medium hover:underline transition-colors leading-tight block truncate"
+                      style={{ color: 'var(--fg-default)' }}
                       title={topic.title}
                     >
-                      {limitTitle(topic.title, 60)}
+                      {limitTitle(topic.title, 50)}
                     </Link>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1 mt-0.5 text-xs" style={{ color: 'var(--fg-muted)' }}>
                       <Link
                         href={`/users/${topic.username}`}
-                        className="hover:text-blue-600 transition-colors"
+                        className="hover:underline transition-colors"
+                        style={{ color: 'var(--fg-muted)' }}
                       >
                         {topic.username}
                       </Link>
@@ -166,18 +168,18 @@ const AnnouncementsTopics: React.FC = () => {
                       <span>{timeSinceLastActivity(topic.last_post_at)}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{topic.post_count} posts</span>
+                  <div className="flex items-center gap-1 text-xs flex-shrink-0" style={{ color: 'var(--fg-muted)' }}>
+                    <span>{topic.post_count}</span>
                   </div>
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="px-4 py-8 text-center">
-            <div className="text-muted-foreground">
-              <Megaphone className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No announcements at this time</p>
+          <div className="px-4 py-6 text-center">
+            <div style={{ color: 'var(--fg-muted)' }}>
+              <Megaphone className="h-6 w-6 mx-auto mb-2 opacity-50" />
+              <p className="text-xs">No announcements at this time</p>
             </div>
           </div>
         )}
