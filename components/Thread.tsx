@@ -8,6 +8,7 @@ import SessionProviderClient from "./SessionProviderClient";
 import debounce from "lodash/debounce";
 import { useRouter } from "next/navigation";
 import { FaTrashAlt } from "react-icons/fa";
+import { Prism, mapCategoryToLanguage } from "@/lib/prism";
 import { ThreadPropThread, UserThread } from "@/app/interfaces/interfaces";
 
 const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => {
@@ -28,6 +29,7 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
     null,
   );
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const[isPinned, setIsPinned] = useState(false);
 
 
@@ -40,8 +42,9 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
     }
   }, [thread, router]);
 
-  const handleDeletePost = async (postId: number) => {
-    if (!isAdmin) return;
+  const handleDeletePost = async (postId: number, postUsername: string) => {
+    // Owner-only delete
+    if (!(currentUsername && currentUsername === postUsername)) return;
 
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this post?",
@@ -72,18 +75,20 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
   };
 
   useEffect(() => {
-    if (session?.user?.name) {
+  if (session?.user?.name) {
       fetch(`/api/v1/users/${session.user.name}`)
         .then((response) => response.json())
         .then((user) => {
-          setIsAdmin(user.user_group === "Admin");
+      setIsAdmin(user.user_group === "Admin");
+      setCurrentUsername(user.username);
         })
         .catch((error) => console.error("Error fetching user data:", error));
     }
   }, [session]);
 
   const handleDeleteThread = async () => {
-    if (!isAdmin) return;
+  // Owner-only delete for thread
+  if (!(currentUsername && currentUsername === thread.username)) return;
 
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this entire thread?",
@@ -640,6 +645,13 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
     fetchPinned();
   }, [session]);
 
+  // Extract first [code]...[/code] block for IDE-like preview
+  const extractFirstCodeBlock = (text: string): string | null => {
+    const match = text.match(/\[code\]([\s\S]*?)\[\/code\]/i);
+    if (match && match[1]) return match[1].trim();
+    return null;
+  };
+
   return (
     <SessionProviderClient session={session}>
       {thread && thread.title ? (
@@ -661,7 +673,7 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
                 <span>{!isPinned? "Pin to Favorites" : "Unpin from Favorites"}</span>
                 
               </button>
-            {isAdmin && (
+            {currentUsername === thread.username && (
               <button
                 onClick={handleDeleteThread}
                 className="px-4 py-2 bg-red-600 text-white rounded-md
@@ -682,7 +694,7 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
             {new Date(thread.created_at).toLocaleString()}
           </p>
           <div className="space-y-4">
-            {posts.map((post) => (
+            {posts.map((post, idx) => (
               <div key={post.id} className="flex">
                 <div className=" pr-4">{renderUserProfile(post.username)}</div>
                 <div className="w-5/6">
@@ -691,25 +703,61 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
                       <span className="text-sm text-gray-400">
                         {new Date(post.created_at).toLocaleString()}
                       </span>
-                      {isAdmin && !post.is_deleted && (
+            {currentUsername === post.username && !post.is_deleted && (
                         <button
-                          onClick={() => handleDeletePost(post.id)}
+              onClick={() => handleDeletePost(post.id, post.username)}
                           className="px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
                         >
                           Delete Post
                         </button>
                       )}
                     </div>
-                    <div className="whitespace-pre-wrap overflow-wrap-break-word word-break-break-word max-w-full">
-                      {post.is_deleted ? (
-                        <div className="flex items-center space-x-2 text-gray-500 italic">
-                          <FaTrashAlt className="text-red-500" />
-                          <span>This content was deleted by a moderator</span>
+                    {(() => {
+                      if (post.is_deleted) {
+                        return (
+                          <div className="whitespace-pre-wrap overflow-wrap-break-word word-break-break-word max-w-full">
+                            <div className="flex items-center space-x-2 text-gray-500 italic">
+                              <FaTrashAlt className="text-red-500" />
+                              <span>This content was deleted by a moderator</span>
+                            </div>
+                          </div>
+                        );
+                      }
+                      // For the first post, try to render as framed code snippet (IDE-like)
+                      const primaryCode = idx === 0 ? extractFirstCodeBlock(post.content) : null;
+                      if (idx === 0 && primaryCode) {
+                        const lines = primaryCode.split('\n');
+                        return (
+                          <div className="snippet-ide-shadow rounded-md bg-gray-900/80 border border-gray-700 overflow-hidden">
+                            <div className="px-3 py-2 bg-gray-800 flex items-center gap-2">
+                              <span className="h-3 w-3 rounded-full bg-red-500" />
+                              <span className="h-3 w-3 rounded-full bg-green-500" />
+                              <span className="ml-2 text-[10px] uppercase tracking-wider text-gray-400">{thread.category_name}</span>
+                            </div>
+                            <div className="bg-gray-900/80 grid grid-cols-[40px_1fr]">
+                              <div className="select-none text-right pr-2 py-3 text-gray-500 text-xs bg-gray-900/80 border-r border-gray-800">
+                                {lines.map((_, i) => (
+                                  <div key={i} className="leading-5">{i + 1}</div>
+                                ))}
+                              </div>
+                              <div className="p-3">
+                                <pre className="font-mono text-[13px] leading-5 text-gray-200 whitespace-pre-wrap break-words">
+                                  <code className={`language-${mapCategoryToLanguage(thread.category_name)}`}>
+                                    {primaryCode}
+                                  </code>
+                                </pre>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      // Fallback to existing rendering
+                      return (
+                        <div className="whitespace-pre-wrap overflow-wrap-break-word word-break-break-word max-w-full">
+                          {renderContentWithEmojisAndBBCode(post.content)}
                         </div>
-                      ) : (
-                        renderContentWithEmojisAndBBCode(post.content)
-                      )}
-                    </div>
+                      );
+                    })()}
                     {!post.is_deleted && (
                       <div className="mt-2 flex items-center">
                         <button
@@ -750,167 +798,50 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
           {session && session.user ? (
             <form onSubmit={handleReplySubmit} className="mt-4">
               <div className="relative">
-                <div className="mb-2 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => insertTextStyle("[b]", "[/b]")}
-                    className="px-2 py-1 bg-gray-600 text-white rounded"
-                  >
-                    B
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertTextStyle("[i]", "[/i]")}
-                    className="px-2 py-1 bg-gray-600 text-white rounded"
-                  >
-                    I
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertTextStyle("[u]", "[/u]")}
-                    className="px-2 py-1 bg-gray-600 text-white rounded"
-                  >
-                    U
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertTextStyle("[s]", "[/s]")}
-                    className="px-2 py-1 bg-gray-600 text-white rounded"
-                  >
-                    S
-                  </button>
-                  <input
-                    type="color"
-                    value={selectedColor}
-                    onChange={(e) => handleColorChange(e.target.value)}
-                    className="w-8 h-8 rounded cursor-pointer"
-                  />
-                  <select
-                    value={selectedFontSize}
-                    onChange={(e) => handleFontSizeChange(e.target.value)}
-                    className="px-2 py-1 bg-gray-600 text-white rounded"
-                  >
-                    <option value="small">Small</option>
-                    <option value="medium">Medium</option>
-                    <option value="large">Large</option>
-                  </select>
-                  <select
-                    onChange={(e) =>
-                      insertTextStyle(`[align=${e.target.value}]`, "[/align]")
-                    }
-                    className="px-2 py-1 bg-gray-600 text-white rounded"
-                  >
-                    <option value="left">Left</option>
-                    <option value="center">Center</option>
-                    <option value="right">Right</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => insertTextStyle("[quote]", "[/quote]")}
-                    className="px-2 py-1 bg-gray-600 text-white rounded"
-                  >
-                    Quote
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertTextStyle("[code]", "[/code]")}
-                    className="px-2 py-1 bg-gray-600 text-white rounded"
-                  >
-                    Code
-                  </button>
-                  <button
-                    type="button"
-                    onClick={insertImage}
-                    className="px-2 py-1 bg-gray-600 text-white rounded"
-                  >
-                    Image
-                  </button>
-                  <button
-                    type="button"
-                    onClick={insertLink}
-                    className="px-2 py-1 bg-gray-600 text-white rounded"
-                  >
-                    Link
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertTextStyle("[hidden]", "[/hidden]")}
-                    className="px-2 py-1 bg-gray-600 text-white rounded"
-                  >
-                    Hidden
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertTextStyle("[spoiler]", "[/spoiler]")}
-                    className="px-2 py-1 bg-gray-600 text-white rounded"
-                  >
-                    Spoiler
-                  </button>
+        {/* Simplified: IDE-like editor only, no extra toolbar */}
+                {/* IDE-like editor for replies */}
+                <div className="snippet-ide-shadow rounded-md border border-gray-700 overflow-hidden">
+                  <div className="px-3 py-2 bg-gray-800 flex items-center gap-2">
+          <span className="h-3 w-3 rounded-full bg-red-500" />
+          <span className="h-3 w-3 rounded-full bg-green-500" />
+                    <span className="ml-2 text-[10px] uppercase tracking-wider text-gray-400">Editor</span>
+                  </div>
+                  <div className="bg-gray-900/80 grid grid-cols-[40px_1fr]">
+                    {/* Line numbers */}
+                    <div className="select-none text-right pr-2 py-3 text-gray-500 text-xs bg-gray-900/80 border-r border-gray-800">
+                      {Array.from({ length: Math.max(1, content.split('\n').length) }).map((_, i) => (
+                        <div key={i} className="leading-5">{i + 1}</div>
+                      ))}
+                    </div>
+                    {/* Input area */}
+                    <div className="p-3">
+                      <textarea
+                        id="content"
+                        ref={textareaRef}
+                        value={content}
+                        onChange={(e) => updateContent(e.target.value)}
+                        onSelect={() => {
+                          if (textareaRef.current) {
+                            setSelectionRange([
+                              textareaRef.current.selectionStart,
+                              textareaRef.current.selectionEnd,
+                            ]);
+                          }
+                        }}
+                        className="w-full bg-transparent text-gray-100 font-mono text-sm leading-5 outline-none resize-y min-h-[180px]"
+                        rows={10}
+                        required
+                        spellCheck={false}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <textarea
-                  id="content"
-                  ref={textareaRef}
-                  value={content}
-                  onChange={(e) => updateContent(e.target.value)}
-                  onSelect={() => {
-                    if (textareaRef.current) {
-                      setSelectionRange([
-                        textareaRef.current.selectionStart,
-                        textareaRef.current.selectionEnd,
-                      ]);
-                    }
-                  }}
-                  className="w-full px-3 py-2 pr-10 bg-gray-700/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  rows={5}
-                  required
-                />
-                <div className="text-sm text-gray-400 mt-1">
+                <div className="text-sm text-gray-400 mt-2">
                   {content.length}/{MAX_CHARACTERS} characters
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="absolute top-12 right-2 p-1.5 pl-2 pr-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 focus:outline-none transition-colors"
-                >
-                  😀
-                </button>
+                
               </div>
-              {showEmojiPicker && (
-                <div className="relative ml-10 right-6 mt-2 p-2 bg-gray-700 rounded-md z-10">
-                  {Object.keys(customEmojis).map((emoji) => (
-                    <span
-                      key={emoji}
-                      onClick={() => handleEmojiClick(emoji)}
-                      className="inline-block m-1 p-1 hover:bg-gray-600 rounded cursor-pointer"
-                    >
-                      <Image
-                        src={customEmojis[emoji]}
-                        alt={emoji}
-                        width={20}
-                        height={20}
-                      />
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="mb-4">
-                <button
-                  type="button"
-                  onClick={() => setShowPreview(!showPreview)}
-                  className="px-4 mt-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  {showPreview ? "Hide Preview" : "Show Preview"}
-                </button>
-              </div>
-              {showPreview && (
-                <div className="mb-4">
-                  <h3 className="text-xl font-bold mb-2">Preview:</h3>
-                  <div
-                    className="bg-gray-700/50 rounded-md p-4 whitespace-pre-wrap overflow-wrap-break-word word-break-break-word max-w-full"
-                    dangerouslySetInnerHTML={{ __html: formatContent(content) }}
-                  />
-                </div>
-              )}
+              
 
               <button
                 type="submit"

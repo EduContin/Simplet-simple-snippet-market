@@ -103,7 +103,7 @@ const HelpPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-4 md:p-8">
+  <div className="container mx-auto px-4 py-8">
       <Head>
         <title>VEC Platform - Help & Information</title>
         <meta
@@ -113,25 +113,25 @@ const HelpPage: React.FC = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8 text-blue-400">
+      <main className="max-w-5xl mx-auto">
+        <h1 className="text-3xl font-bold text-center mb-6 text-gray-100">
           Welcome to Simplet
         </h1>
 
-        <nav className="mb-8 p-4 bg-gray-800 rounded-lg">
-          <h2 className="text-2xl font-semibold mb-4 text-blue-400">
+        <nav className="mb-6 p-6 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-lg github-shadow">
+          <h2 className="text-2xl font-semibold mb-3 text-gray-100">
             Table of Contents
           </h2>
-          <ul className="space-y-2">
+          <ul className="space-y-2 text-gray-300">
             <li>
-              <a href="#about-us" className="text-blue-300 hover:underline">
+              <a href="#about-us" className="text-blue-400 hover:underline">
                 About Our Platform
               </a>
             </li>
             <li>
               <a
                 href="#general-rules"
-                className="text-blue-300 hover:underline"
+                className="text-blue-400 hover:underline"
               >
                 Community Guidelines
               </a>
@@ -139,7 +139,7 @@ const HelpPage: React.FC = () => {
             <li>
               <a
                 href="#posting-rules"
-                className="text-blue-300 hover:underline"
+                className="text-blue-400 hover:underline"
               >
                 Content Guidelines
               </a>
@@ -147,7 +147,7 @@ const HelpPage: React.FC = () => {
             <li>
               <a
                 href="#collaboration-rules"
-                className="text-blue-300 hover:underline"
+                className="text-blue-400 hover:underline"
               >
                 Collaboration Guidelines
               </a>
@@ -155,7 +155,7 @@ const HelpPage: React.FC = () => {
             <li>
               <a
                 href="#communication-rules"
-                className="text-blue-300 hover:underline"
+                className="text-blue-400 hover:underline"
               >
                 Communication Guidelines
               </a>
@@ -163,8 +163,8 @@ const HelpPage: React.FC = () => {
           </ul>
         </nav>
 
-        <section id="about-us" className="mb-8 bg-gray-800 p-6 rounded-lg">
-          <h2 className="text-2xl font-semibold mb-4 text-blue-400">
+        <section id="about-us" className="mb-6 bg-gray-800/90 backdrop-blur-sm p-6 border border-gray-700 rounded-lg">
+          <h2 className="text-2xl font-semibold mb-3 text-gray-100">
             About Our Platform
           </h2>
         <p className="text-gray-300 mb-4">
@@ -205,21 +205,16 @@ const HelpPage: React.FC = () => {
 
         </section>
 
-        <section id="general-rules" className="mb-8 bg-gray-800 p-6 rounded-lg">
-          <h2
-            id="general-rules"
-            className="text-2xl font-semibold mb-4 text-blue-400"
-          >
-            Platform Guidelines
-          </h2>
+        <section id="general-rules" className="mb-6 bg-gray-800/90 backdrop-blur-sm p-6 border border-gray-700 rounded-lg">
+          <h2 id="general-rules" className="text-2xl font-semibold mb-3 text-gray-100">Platform Guidelines</h2>
           <RuleSection title="Community Guidelines" rules={generalRules} />
           <RuleSection title="Content Guidelines" rules={postingRules} />
           <RuleSection title="Collaboration Guidelines" rules={collaborationRules} />
           <RuleSection title="Communication Guidelines" rules={communicationRules} />
         </section>
 
-        <section className="mb-8 bg-gray-800 p-6 rounded-lg">
-          <h2 className="text-2xl font-semibold mb-4 text-blue-400">
+        <section className="mb-6 bg-gray-800/90 backdrop-blur-sm p-6 border border-gray-700 rounded-lg">
+          <h2 className="text-2xl font-semibold mb-3 text-gray-100">
             Terms of Service
           </h2>
          <ol className="list-decimal list-inside text-gray-300">
@@ -268,8 +263,8 @@ const HelpPage: React.FC = () => {
 
         </section>
 
-        <section className="mb-8 bg-gray-800 p-6 rounded-lg">
-          <h2 className="text-2xl font-semibold mb-4 text-blue-400">
+        <section className="mb-6 bg-gray-800/90 backdrop-blur-sm p-6 border border-gray-700 rounded-lg">
+          <h2 className="text-2xl font-semibold mb-3 text-gray-100">
             Contact Us
           </h2>
           <p className="text-gray-300">
@@ -281,7 +276,7 @@ const HelpPage: React.FC = () => {
               support@simplet-platform.dev
             </a>
           </p>
-          <p className="mt-4 p-4 bg-blue-900 text-gray-300 rounded-lg italic">
+          <p className="mt-4 p-4 bg-blue-900/50 border border-blue-900 text-gray-300 rounded-lg italic">
             For urgent matters or emergency situations, please contact your 
             code provider directly or use your institution's emergency communication channels.
           </p>

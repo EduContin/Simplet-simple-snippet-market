@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const { title, content, userId, categoryId, announcements } = await request.json();
+  const ann = announcements === true ? true : false;
 
   try {
     const result = await database.query({
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
         SELECT $5, $2, id FROM new_thread
         RETURNING thread_id
       `,
-      values: [title, userId, categoryId, announcements, content],
+  values: [title, userId, categoryId, ann, content],
     });
 
     const threadId = result.rows[0].thread_id;

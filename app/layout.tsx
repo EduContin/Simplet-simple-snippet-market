@@ -4,6 +4,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import React from "react";
+import "prismjs/themes/prism-tomorrow.css";
 import SessionProviderClient from "@/components/SessionProviderClient";
 import Navbar from "@/components/Navbar";
 
@@ -16,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+  <body className={`${inter.className} language-javascript`}>
         <SessionProviderClient>
           <Navbar />
           {children}

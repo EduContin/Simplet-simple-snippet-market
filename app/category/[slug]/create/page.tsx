@@ -21,10 +21,7 @@ export default async function CreateThreadPage({
   const category = await getCategory(categorySlug);
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-4">
-        Create New Thread in {category.name}
-      </h1>
+    <main className="container mx-auto px-4 py-6">
       <CreateThreadForm categoryId={category.id} />
     </main>
   );
