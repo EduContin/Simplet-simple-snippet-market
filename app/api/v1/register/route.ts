@@ -4,7 +4,7 @@ import database from "@/infra/database";
 
 export async function POST(request: Request) {
   try {
-    const { username, email, password } = await request.json();
+  const { username, email, password, role } = await request.json();
 
     if (!username || !email || !password) {
       return NextResponse.json(
@@ -29,9 +29,16 @@ export async function POST(request: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Validate and map role to user_group
+    // Do not allow self-selecting admin at signup
+    const allowedRoles = new Set(["contributor", "company"]);
+    const selectedRole = allowedRoles.has((role || "").toLowerCase())
+      ? (role as string).toLowerCase()
+      : "contributor";
+
     const result = await database.query({
-      text: "INSERT INTO users (username, email, password, created_at, user_group) VALUES ($1, $2, $3, NOW(), 'user') RETURNING id, username, email, created_at, user_group",
-      values: [username, email, hashedPassword],
+      text: "INSERT INTO users (username, email, password, created_at, user_group) VALUES ($1, $2, $3, NOW(), $4) RETURNING id, username, email, created_at, user_group",
+      values: [username, email, hashedPassword, selectedRole],
     });
 
     const newUser = result.rows[0];

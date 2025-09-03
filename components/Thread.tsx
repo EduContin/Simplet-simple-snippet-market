@@ -279,7 +279,7 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
         const postIds = initialPosts.map((post) => post.id).join(",");
         try {
           const response = await fetch(
-            `/api/v1/likes?postIds=${postIds}&userId=${session.user.id}`,
+            `/api/v1/likes/by-post?postIds=${postIds}`,
           );
           if (response.ok) {
             const likedPosts = await response.json();
@@ -517,18 +517,20 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          // Prefer postId for replies; server infers user from session
           postId,
-          userId: session.user.id,
         }),
       });
 
       if (response.ok) {
-        const updatedPost = await response.json();
-        setPosts(
-          posts.map((post) =>
-            post.id === postId ? { ...post, ...updatedPost } : post,
-          ),
+        const updated = await response.json();
+        // Support both shapes: { likes_count, is_liked_by_user } or { count, liked }
+        const patch = (p: typeof updated) => (
+          'likes_count' in p || 'is_liked_by_user' in p
+            ? { likes_count: p.likes_count, is_liked_by_user: !!p.is_liked_by_user }
+            : { likes_count: Number(p.count ?? 0), is_liked_by_user: !!p.liked }
         );
+        setPosts(posts.map((post) => post.id === postId ? { ...post, ...patch(updated) } : post));
       } else {
         console.error("Failed to like post");
       }
@@ -566,6 +568,36 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
       }
     } catch (error) {
       console.error("Error submitting reply:", error);
+    }
+  };
+
+  // Toggle like on the thread's first post so it contributes to "Liked snippets"
+  const handleToggleThreadLike = async () => {
+    try {
+      const res = await fetch(`/api/v1/likes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ threadId: thread.id })
+      });
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+      if (!res.ok) throw new Error('like failed');
+      const data = await res.json();
+      // Update first post like state
+      setPosts(prev => prev.map((p, i) => i === 0 ? { ...p, likes_count: data.count, is_liked_by_user: data.liked } : p));
+      // Notify others (e.g., My Snippets) to refresh
+      try { window.dispatchEvent(new CustomEvent('likes:changed', { detail: { threadId: thread.id, liked: data.liked } })); } catch {}
+    } catch (e) {
+      // attempt to refresh first post like state
+      try {
+        const q = await fetch(`/api/v1/likes?threadId=${thread.id}`, { cache: 'no-store' });
+        if (q.ok) {
+          const d = await q.json();
+          setPosts(prev => prev.map((p, i) => i === 0 ? { ...p, likes_count: d.count ?? 0, is_liked_by_user: !!d.liked } : p));
+        }
+      } catch {}
     }
   };
 
@@ -761,7 +793,7 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
                     {!post.is_deleted && (
                       <div className="mt-2 flex items-center">
                         <button
-                          onClick={() => handleLike(post.id)}
+                          onClick={() => (idx === 0 ? handleToggleThreadLike() : handleLike(post.id))}
                           className={`flex items-center space-x-1 ${
                             post.is_liked_by_user
                               ? "text-blue-500"

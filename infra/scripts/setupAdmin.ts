@@ -1,37 +1,35 @@
-import { createUser } from "@/lib/user";
 import database from "../database";
-import bcrypt from "bcrypt";
 
 async function setupAdmin() {
-  const adminDetails = {
-    username: "Admin",
-    email: "admin@simplet.com",
-    password: "Admin", // You should change this
-  };
-
   try {
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(adminDetails.password, 10);
-    adminDetails.password = hashedPassword;
-
-    // Create the admin user
-    const newUser = await createUser(adminDetails);
-
-    if (!newUser) {
-      throw new Error("Failed to create admin user");
+    // Find an existing admin user (prefer explicit Admin group); fallbacks by common username/email.
+    const existing = await database.query({
+      text: `SELECT id, user_group FROM users WHERE user_group = 'Admin' OR username = 'Admin' OR email = 'admin@simplet.com' ORDER BY user_group = 'Admin' DESC LIMIT 1`,
+      values: [],
+    });
+    if (existing.rowCount === 0) {
+      console.log("No existing admin user found; skipping wallet funding.");
+      return;
     }
-
-    // Update the user_group to admin
-    const updateResult = await database.query({
-      text: "UPDATE users SET user_group = $1 WHERE email = $2",
-      values: ["Admin", adminDetails.email],
+    const adminId = existing.rows[0].id as number;
+    // Ensure user_group is Admin
+    await database.query({
+      text: `UPDATE users SET user_group = 'Admin' WHERE id = $1 AND user_group <> 'Admin'`,
+      values: [adminId],
     });
 
-    if (updateResult.rowCount === 1) {
-      console.log("Admin user created and set up successfully");
-    } else {
-      throw new Error("Failed to update user_group to admin");
-    }
+    const targetCents = 1_000_000; // $10,000.00 in cents
+    // Upsert wallet with desired balance
+    await database.query({
+      text: `
+        INSERT INTO wallets (user_id, balance_cents, currency)
+        VALUES ($1, $2, 'USD')
+        ON CONFLICT (user_id) DO UPDATE SET balance_cents = EXCLUDED.balance_cents, currency = EXCLUDED.currency, updated_at = NOW()
+      `,
+      values: [adminId, targetCents],
+    });
+
+    console.log("Existing Admin wallet set to $10,000.");
   } catch (error) {
     console.error("Error setting up admin user:", error);
   }

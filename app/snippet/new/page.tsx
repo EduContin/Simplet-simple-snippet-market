@@ -44,6 +44,8 @@ export default function NewSnippetPage() {
   const [license, setLicense] = useState<string>(licenseOptions[0]);
   const [filename, setFilename] = useState("snippet.js");
   const [code, setCode] = useState("");
+  const [priceType, setPriceType] = useState<"fixed" | "discussion">("fixed");
+  const [price, setPrice] = useState<string>("");
   const [checkResult, setCheckResult] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,6 +77,10 @@ export default function NewSnippetPage() {
     if (filename.includes(".")) setFilename(filename.replace(/\.[^.]+$/, `.${ext}`));
     else setFilename(`${filename}.${ext}`);
   };
+
+  // Enforce MIT license as free (disable pricing)
+  const isMIT = license === "MIT";
+  const effectivePriceType = isMIT ? "discussion" : priceType; // force hide fixed input for MIT
 
   const checkCode = async () => {
     try {
@@ -130,7 +136,8 @@ export default function NewSnippetPage() {
     }
     setIsSubmitting(true);
     try {
-      const meta = `[b]Tags:[/b] ${tech.length ? tech.join(', ') : '—'}\n[b]License:[/b] ${license}\n\n${description ? description : ''}`;
+  const priceLine = priceType === "discussion" ? "Up for discussion" : (price ? `$${price}` : "—");
+  const meta = `[b]Tags:[/b] ${tech.length ? tech.join(', ') : '—'}\n[b]License:[/b] ${license}\n[b]Price:[/b] ${priceLine}\n\n${description ? description : ''}`;
       const bb = `${meta}\n[code]\n${code}\n[/code]`;
       const categoryId = 1; // fallback: map language/tech to categories later
       const langLabel = languageOptions.find((o) => o.id === language)?.label || language;
@@ -221,6 +228,38 @@ export default function NewSnippetPage() {
           </select>
         </div>
 
+        {/* Pricing */}
+        <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className="block mb-1 text-sm">Pricing</label>
+            <select
+              value={effectivePriceType}
+              onChange={(e) => setPriceType(e.target.value as any)}
+              className="w-full px-3 py-2 bg-gray-700/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+              disabled={isMIT}
+            >
+              <option value="fixed">Fixed price</option>
+              <option value="discussion">Up for discussion</option>
+            </select>
+            {isMIT && <div className="mt-1 text-xs text-amber-300">MIT licensed snippets are free; pricing is disabled.</div>}
+          </div>
+          {effectivePriceType === "fixed" && (
+            <div className="md:col-span-2">
+              <label className="block mb-1 text-sm">Amount (USD)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="e.g., 49.99"
+                className="w-full px-3 py-2 bg-gray-700/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                disabled={isMIT}
+              />
+            </div>
+          )}
+        </div>
+
         <div className="mb-4">
           <label className="block mb-1 text-sm">Description</label>
           <textarea
@@ -276,20 +315,7 @@ export default function NewSnippetPage() {
         </div>
         {checkResult && <div className="mt-2 text-sm text-gray-300">{checkResult}</div>}
 
-        {/* Live highlighted preview */}
-        <div className="mt-4">
-          <div className="rounded-md border border-gray-700 overflow-hidden">
-            <div className="px-3 py-2 bg-gray-800 text-xs text-gray-400">Preview</div>
-            <div className="bg-gray-900/80 p-3">
-              <pre className="font-mono text-[13px] leading-5 text-gray-200 whitespace-pre-wrap break-words">
-                <code
-                  className={`language-${language}`}
-                  dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-                />
-              </pre>
-            </div>
-          </div>
-        </div>
+  {/* Preview removed per requirement. Comments live under the snippet view page. */}
 
         {submitError && <div className="mt-2 text-sm text-red-400">{submitError}</div>}
 

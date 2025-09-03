@@ -7,6 +7,7 @@ import React from "react";
 import "prismjs/themes/prism-tomorrow.css";
 import SessionProviderClient from "@/components/SessionProviderClient";
 import Navbar from "@/components/Navbar";
+import Head from "next/head";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,6 +18,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <Head>
+        <title>Simplet</title>
+      </Head>
   <body className={`${inter.className} language-javascript`}>
         <SessionProviderClient>
           <Navbar />

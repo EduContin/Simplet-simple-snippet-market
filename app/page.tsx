@@ -16,8 +16,8 @@ type Thread = {
 };
 
 async function fetchThreads(page = 1, pageSize = 24): Promise<Thread[]> {
-	const apiUrl = process.env.NEXT_PUBLIC_APP_URL || "";
-	const url = `${apiUrl}/api/v1/threads?page=${page}&pageSize=${pageSize}`;
+	// Use relative URL to avoid misconfigured NEXT_PUBLIC_APP_URL breaking client fetches
+	const url = `/api/v1/threads?page=${page}&pageSize=${pageSize}`;
 	const res = await fetch(url, { cache: "no-store" });
 	if (!res.ok) throw new Error("Failed to fetch threads");
 	return res.json();
@@ -25,8 +25,7 @@ async function fetchThreads(page = 1, pageSize = 24): Promise<Thread[]> {
 
 async function fetchFirstPost(threadId: number): Promise<string | undefined> {
 	try {
-		const apiUrl = process.env.NEXT_PUBLIC_APP_URL || "";
-		const url = `${apiUrl}/api/v1/posts?threadId=${threadId}`;
+		const url = `/api/v1/posts?threadId=${threadId}`;
 		const res = await fetch(url, { cache: "no-store" });
 		if (!res.ok) return undefined;
 		const posts = await res.json();
@@ -84,74 +83,7 @@ export default function HomePage() {
 					}
 					if (!mounted) return;
 
-					// If no data, create mock snippets to fill the page
-					if (!data || data.length === 0) {
-						const mock: Thread[] = [
-							{
-								id: 900001,
-								title: "Python • Hello World CLI",
-								username: "mockuser",
-								category_name: "Python",
-								post_count: 1,
-								last_post_at: new Date().toISOString(),
-								announcements: false,
-							},
-							{
-								id: 900002,
-								title: "JavaScript • Debounce Utility",
-								username: "mockuser",
-								category_name: "JavaScript",
-								post_count: 1,
-								last_post_at: new Date().toISOString(),
-								announcements: false,
-							},
-							{
-								id: 900003,
-								title: "SQL • Top N per Group",
-								username: "mockuser",
-								category_name: "SQL",
-								post_count: 1,
-								last_post_at: new Date().toISOString(),
-								announcements: false,
-							},
-							{
-								id: 900004,
-								title: "CSS • Center a Div",
-								username: "mockuser",
-								category_name: "UI",
-								post_count: 1,
-								last_post_at: new Date().toISOString(),
-								announcements: false,
-							},
-							{
-								id: 900005,
-								title: "Go • HTTP JSON API",
-								username: "mockuser",
-								category_name: "Go",
-								post_count: 1,
-								last_post_at: new Date().toISOString(),
-								announcements: false,
-							},
-							{
-								id: 900006,
-								title: "TypeScript • Narrowing Helpers",
-								username: "mockuser",
-								category_name: "TypeScript",
-								post_count: 1,
-								last_post_at: new Date().toISOString(),
-								announcements: false,
-							},
-						];
-						setThreads(mock);
-						setPreviews({
-							900001: { contentSnippet: '# Print to console\nprint("Hello, World!")\n\n# Request user input from command line\ntext = input()\n\n# Retrieve command line arguments\nimport sys\nargs = sys.argv\n\n# Open file\nf = open("path/to/file")' },
-							900002: { contentSnippet: '// Debounce utility\nfunction debounce(fn, wait) {\n  let t;\n  return (...args) => {\n    clearTimeout(t);\n    t = setTimeout(() => fn.apply(null, args), wait);\n  };\n}\n\n// Usage\nwindow.addEventListener("resize", debounce(() => console.log("resized"), 200));' },
-							900003: { contentSnippet: '-- Top N per group\nSELECT *\nFROM (\n  SELECT t.*,\n         ROW_NUMBER() OVER(PARTITION BY group_id ORDER BY score DESC) AS rn\n  FROM table t\n) s\nWHERE rn <= 3;' },
-							900004: { contentSnippet: '/* Center a div */\n.container {\n  display: grid;\n  place-items: center;\n  min-height: 100vh;\n}' },
-							900005: { contentSnippet: '// Go JSON API\nhttp.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request){\n  w.Header().Set("Content-Type", "application/json");\n  w.Write([]byte(`{"message":"hello"}`))\n})' },
-							900006: { contentSnippet: '// Type guards\nfunction isDefined<T>(x: T | undefined | null): x is T {\n  return x !== undefined && x !== null;\n}\n\nconst values = [1, null, 2, undefined, 3].filter(isDefined);' },
-						});
-					} else {
+					if (data && data.length > 0) {
 						setThreads(data);
 						// Load previews for card view (first post snippet)
 						const ids = data.map((t) => t.id);
@@ -186,6 +118,9 @@ export default function HomePage() {
 							}
 						});
 						setPreviews(map);
+					} else {
+						setThreads([]);
+						setPreviews({});
 					}
 			} finally {
 				if (mounted) setIsLoading(false);
@@ -245,18 +180,23 @@ export default function HomePage() {
 					{/* Feed as Cards using ThreadList */}
 			{isLoading ? (
 				<div className="bg-gray-800/90 backdrop-blur-sm rounded-lg p-6 mb-2 shadow-lg text-gray-300">Loading snippets…</div>
-			) : (
+			) : threads.length > 0 ? (
 								<ThreadList
 							threads={filtered}
 							view="cards"
 							previews={previews}
 									// Disable navigation for mock items (ids >= 900000)
-									  linkResolver={(t) => (t.id >= 900000 ? null : `/snippet/${t.id}`)}
+									  linkResolver={(t) => `/snippet/${t.id}`}
 									  onDismiss={(id) => {
 										// Optional: could sync to backend later. For now, localStorage is handled inside ThreadList
 										console.debug("Dismissed", id);
 									  }}
 						/>
+			) : (
+				<div className="bg-gray-800/90 backdrop-blur-sm rounded-lg p-10 mb-2 shadow-lg text-center text-gray-300">
+					<div className="text-lg mb-2">No snippets yet.</div>
+					<a href="/snippet/new" className="inline-block mt-2 px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white">Create your first snippet</a>
+				</div>
 			)}
 		</main>
 	);

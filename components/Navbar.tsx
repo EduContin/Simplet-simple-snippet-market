@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -19,12 +19,15 @@ import {
   HelpCircle,
   User,
   Settings,
-  LogOut
+  LogOut,
+  Wallet
 } from "lucide-react";
 
 const Navbar: React.FC = () => {
   const { data: session } = useSession();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [balanceCents, setBalanceCents] = useState<number | null>(null);
+  const userId = useMemo(() => session?.user && (session.user as any).id, [session]);
 
   useEffect(() => {
     const fetchAvatarUrl = async () => {
@@ -44,9 +47,28 @@ const Navbar: React.FC = () => {
     fetchAvatarUrl();
   }, [session]);
 
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!userId) return;
+      try {
+        const res = await fetch(`/api/v1/wallet/balance?userId=${userId}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          setBalanceCents(Number(data.balance_cents || 0));
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchBalance();
+    // poll lightly to keep it fresh after deposits/transfers
+    const id = setInterval(fetchBalance, 15000);
+    return () => clearInterval(id);
+  }, [userId]);
+
   const navigationItems = [
     { href: "/", label: "Home", icon: Home },
-    { href: "/notebook", label: "Library", icon: BookOpen },
+    { href: "/my-snippets", label: "My Snippets", icon: BookOpen },
     { href: "/help", label: "Help", icon: HelpCircle },
   ];
 
@@ -95,6 +117,18 @@ const Navbar: React.FC = () => {
 
         <div className="flex flex-1 items-center justify-end">
           <nav className="flex items-center space-x-3">
+            {session?.user && (
+              <Link href="/wallet" className="relative flex items-center gap-1 px-2 py-1 rounded-md border"
+                style={{ borderColor: 'var(--border-default)', color: 'var(--fg-default)', backgroundColor: 'var(--canvas)' }}
+              >
+                <Wallet className="h-4 w-4" />
+                {balanceCents !== null && (
+                  <span className="text-xs font-medium opacity-90">
+                    R$ {(balanceCents / 100).toFixed(2)}
+                  </span>
+                )}
+              </Link>
+            )}
             {session?.user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -150,6 +184,25 @@ const Navbar: React.FC = () => {
                       </p>
                     </div>
                   </DropdownMenuLabel>
+                  <DropdownMenuSeparator
+                    style={{ backgroundColor: 'var(--border-default)' }}
+                  />
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/wallet"
+                      className="flex items-center px-3 py-2 text-sm cursor-pointer transition-colors"
+                      style={{ color: 'var(--fg-default)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--canvas-subtle)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <Wallet className="mr-2 h-4 w-4" />
+                      <span>Wallet</span>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator
                     style={{ backgroundColor: 'var(--border-default)' }}
                   />

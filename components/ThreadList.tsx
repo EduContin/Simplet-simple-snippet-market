@@ -5,6 +5,7 @@ import Link from "next/link";
 import { slugify } from "@/models/slugify";
 import { FaComments, FaUser, FaFolder, FaClock, FaHeart, FaPlus } from "react-icons/fa";
 import { Prism, mapCategoryToLanguage } from "@/lib/prism";
+import { useSession } from "next-auth/react";
 
 
 interface Thread {
@@ -61,6 +62,7 @@ const timeSinceLastActivity = (lastActivity: string): string => {
 };
 
 const ThreadList: React.FC<ThreadListProps> = ({ threads, view = "table", previews, linkResolver, onDismiss }) => {
+  const { data: session } = useSession();
   const sortedThreads = [...threads].sort((a, b) => {
     if (a.announcements === b.announcements) {
       return new Date(b.last_post_at).getTime() - new Date(a.last_post_at).getTime();
@@ -71,6 +73,8 @@ const ThreadList: React.FC<ThreadListProps> = ({ threads, view = "table", previe
   // Local UI state for expanded and dismissed snippets in cards view
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [dismissed, setDismissed] = useState<Record<number, boolean>>({});
+  const [likes, setLikes] = useState<Record<number, number>>({});
+  const [likedMap, setLikedMap] = useState<Record<number, boolean>>({});
 
   // hydrate dismissed from localStorage and persist on change
   useEffect(() => {
@@ -84,6 +88,19 @@ const ThreadList: React.FC<ThreadListProps> = ({ threads, view = "table", previe
       localStorage.setItem("dismissedSnippets", JSON.stringify(dismissed));
     } catch {}
   }, [dismissed]);
+
+  // hydrate liked state from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("likedThreads");
+      if (raw) {
+        const arr = JSON.parse(raw) as Thread[];
+        const map: Record<number, boolean> = {};
+        arr.forEach((t) => (map[t.id] = true));
+        setLikedMap(map);
+      }
+    } catch {}
+  }, []);
 
   const visibleThreads = useMemo(
     () => sortedThreads.filter((t) => !dismissed[t.id]),
@@ -102,6 +119,37 @@ const ThreadList: React.FC<ThreadListProps> = ({ threads, view = "table", previe
     }, 0);
     return () => window.clearTimeout(id);
   }, [view, visibleThreads, previews, expanded]);
+
+  const toggleLike = async (thread: Thread) => {
+    try {
+      const userId = (session?.user as any)?.id;
+      if (!userId) return;
+      // fetch first post id for this thread
+      const pr = await fetch(`/api/v1/posts?threadId=${thread.id}`, { cache: 'no-store' });
+      if (!pr.ok) return;
+      const posts = await pr.json();
+      const first = posts?.[0];
+      if (!first) return;
+      const lr = await fetch('/api/v1/likes', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: first.id, userId })
+      });
+      if (!lr.ok) return;
+      const data = await lr.json();
+      setLikes((m) => ({ ...m, [thread.id]: data.likes_count }));
+      setLikedMap((m) => ({ ...m, [thread.id]: data.is_liked_by_user }));
+      // Update localStorage list for My Snippets page
+      try {
+        const raw = localStorage.getItem('likedThreads');
+        let arr: Thread[] = raw ? JSON.parse(raw) : [];
+        const exists = arr.some((t) => t.id === thread.id);
+        if (data.is_liked_by_user && !exists) arr = [{ ...thread }, ...arr];
+        if (!data.is_liked_by_user && exists) arr = arr.filter((t) => t.id !== thread.id);
+        localStorage.setItem('likedThreads', JSON.stringify(arr));
+      } catch {}
+      window.dispatchEvent(new CustomEvent('likes:changed'));
+    } catch {}
+  };
 
     if (!sortedThreads || sortedThreads.length === 0) {
     return (
@@ -212,7 +260,14 @@ const ThreadList: React.FC<ThreadListProps> = ({ threads, view = "table", previe
                 <div className="px-4 pb-4 mt-3 flex items-center justify-between text-gray-300 text-sm">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1"><FaComments /> <span>{Math.max(0, thread.post_count - 1)}</span></div>
-                    <div className="flex items-center gap-1"><FaHeart className="text-red-400" /> <span>{(thread as any).first_post_likes ?? 0}</span></div>
+                    <button
+                      type="button"
+                      aria-label="Like snippet"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleLike(thread); }}
+                      className={`flex items-center gap-1 ${likedMap[thread.id] ? 'text-red-400' : 'text-gray-300 hover:text-red-300'}`}
+                    >
+                      <FaHeart /> <span>{likes[thread.id] ?? (thread as any).first_post_likes ?? 0}</span>
+                    </button>
                   </div>
                   <div className="flex items-center gap-2">
                     <FaUser className="text-gray-400" />
@@ -291,10 +346,15 @@ const ThreadList: React.FC<ThreadListProps> = ({ threads, view = "table", previe
                   {thread.post_count - 1}
                 </td>
                 <td className="py-3 px-4 border-b border-gray-600/50 text-gray-300">
-                  <div className="flex items-center">
-                    <FaHeart className="mr-2 text-red-400 flex-shrink-0" />
-                    {(thread as any).first_post_likes ?? 0}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleLike(thread); }}
+                    className={`flex items-center ${likedMap[thread.id] ? 'text-red-400' : 'text-gray-300 hover:text-red-300'}`}
+                    aria-label="Like snippet"
+                  >
+                    <FaHeart className="mr-2 flex-shrink-0" />
+                    {likes[thread.id] ?? (thread as any).first_post_likes ?? 0}
+                  </button>
                 </td>
                 <td className="py-3 px-4 border-b border-gray-600/50 text-gray-300">
                   <div className="flex items-center">

@@ -32,6 +32,7 @@ export default function RegisterForm() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"contributor" | "company">("contributor");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -40,7 +41,7 @@ export default function RegisterForm() {
   const router = useRouter();
 
   const validateForm = () => {
-    if (!username.trim() || !email.trim() || !password.trim()) {
+  if (!username.trim() || !email.trim() || !password.trim()) {
       setError("All fields are required");
       return false;
     }
@@ -73,13 +74,14 @@ export default function RegisterForm() {
   const handleRegistration = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/v1/register", {
+    const response = await fetch("/api/v1/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username,
-          email,
-          password
+      username,
+      email,
+      password,
+      role,
         }),
       });
 
@@ -149,6 +151,19 @@ export default function RegisterForm() {
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
                 </div>
+              </div>
+              {/* Role selection (single choice; Admin cannot be self-selected) */}
+              <div className="mb-4 text-left">
+                <label className="block mb-2 text-slate-200">Select your role</label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as any)}
+                  className="w-full px-3 py-2 border rounded bg-slate-800 border-slate-600 focus:border-blue-500 focus:ring-blue-500 text-white"
+                >
+                  <option value="contributor">Contributor</option>
+                  <option value="company">Company</option>
+                </select>
+                <p className="mt-1 text-xs text-slate-400">Only one role can be chosen. Contributors create and wishlist snippets; Companies can contact users, propose agreements, and submit project needs. Admins are assigned by platform operators only.</p>
               </div>
               <PasswordStrengthBar password={password} />
               <div className="flex items-center mb-4">

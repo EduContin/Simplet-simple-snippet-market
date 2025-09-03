@@ -1,12 +1,5 @@
-import Notebook from "@/components/Notebook";
-import { Suspense } from "react";
+import { redirect } from "next/navigation";
 
 export default function NotebookBody(){
-    return (
-        <div>
-            <Suspense fallback={<div>Loading...</div>}>
-                <Notebook/>
-            </Suspense>
-        </div>
-    );
+    redirect('/my-snippets');
 }
