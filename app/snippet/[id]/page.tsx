@@ -4,6 +4,8 @@ import { mapCategoryToLanguage } from "@/lib/language";
 import CommentsSection from "@/components/CommentsSection";
 import { headers } from "next/headers";
 import AddToCartClient from "@/components/AddToCartClient";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
 
 async function getThread(threadId: string) {
   const h = headers();
@@ -37,13 +39,16 @@ export default async function SnippetPage({ params }: { params: { id: string } }
   const firstPost = await getFirstPost(params.id);
   const code = extractCodeFromBBCode(firstPost?.content || "");
   const language = mapCategoryToLanguage(thread?.category_name || thread?.title || "");
+  const session: any = await getServerSession(authOptions as any).catch(() => null);
+  const meId = session?.user?.id ? Number(session.user.id) : undefined;
+  const isOwner = meId && thread?.user_id ? Number(thread.user_id) === meId : false;
 
   return (
     <main className="container mx-auto px-4 py-6">
       <div className="bg-gray-800/90 backdrop-blur-sm rounded-lg p-6 shadow-lg">
         <h1 className="text-2xl font-bold mb-4 text-gray-100">{thread?.title || "Snippet"}</h1>
         <SnippetCode code={code} language={language} />
-        {thread?.id && (
+  {thread?.id && !isOwner && (
           <div className="mt-4">
             <AddToCartClient threadId={Number(thread.id)} />
           </div>

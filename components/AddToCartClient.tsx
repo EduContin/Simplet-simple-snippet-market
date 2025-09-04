@@ -18,6 +18,8 @@ export default function AddToCartClient({ threadId }: { threadId: number }) {
       });
       if (res.ok) {
         setAdded(true);
+  // Optional: take user to Cart to confirm
+  router.push("/cart");
       } else if (res.status === 401) {
         router.push("/login");
       }

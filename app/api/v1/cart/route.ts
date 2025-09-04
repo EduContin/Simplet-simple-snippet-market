@@ -21,6 +21,27 @@ async function getThreadPriceCents(threadId: number): Promise<number> {
   return Math.round(num * 100);
 }
 
+function parseLicense(content: string): string | null {
+  const m = content.match(/\[b\]License:\[\/b\]\s*([^\n]+)/i);
+  return m ? m[1].trim() : null;
+}
+
+async function getThreadMeta(threadId: number): Promise<{ price_cents: number; price_label: string; license: string | null }>{
+  const res = await database.query({
+    text: `SELECT content FROM posts WHERE thread_id = $1 ORDER BY created_at ASC LIMIT 1`,
+    values: [threadId],
+  });
+  if (res.rowCount === 0) return { price_cents: 0, price_label: "$0.00", license: null };
+  const content = res.rows[0].content as string;
+  const priceMatch = content.match(/\[b\]Price:\[\/b\]\s*([^\n]+)/i);
+  const raw = priceMatch ? priceMatch[1].trim() : "";
+  const isDiscussion = /up for discussion/i.test(raw);
+  const cents = await getThreadPriceCents(threadId);
+  const price_label = isDiscussion ? "Up for discussion" : `$${(cents/100).toFixed(2)}`;
+  const license = parseLicense(content);
+  return { price_cents: cents, price_label, license };
+}
+
 export async function GET(request: NextRequest) {
   const session: any = await getServerSession(authOptions as any);
   const userId = session?.user?.id;
@@ -35,11 +56,19 @@ export async function GET(request: NextRequest) {
              ORDER BY ci.created_at DESC`,
       values: [userId],
     });
-    const items = itemsRes.rows.map((r: any) => ({
-      thread_id: Number(r.thread_id),
-      title: r.title as string,
-      price_cents: Number(r.price_cents || 0),
-    }));
+    const items = [] as Array<{ thread_id: number; title: string; price_cents: number; price_label: string; license: string|null }>;
+    for (const r of itemsRes.rows) {
+      const thread_id = Number(r.thread_id);
+      const title = r.title as string;
+      let price_cents = Number(r.price_cents || 0);
+      // Re-derive label and license from current first post content for display richness
+      const meta = await getThreadMeta(thread_id);
+      if (price_cents !== meta.price_cents) {
+        // Sync stored cents with parsed meta to keep totals accurate if snippet meta changed
+        price_cents = meta.price_cents;
+      }
+      items.push({ thread_id, title, price_cents, price_label: meta.price_label, license: meta.license });
+    }
     const total_cents = items.reduce((sum: number, it: any) => sum + it.price_cents, 0);
     return NextResponse.json({ items, total_cents });
   } catch (e) {
@@ -50,7 +79,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const session: any = await getServerSession(authOptions as any);
-  const userId = session?.user?.id;
+  const userIdRaw = session?.user?.id;
+  const userId = userIdRaw ? Number(userIdRaw) : undefined;
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
@@ -60,6 +90,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Validate thread and avoid adding own snippet
+    const thr = await database.query({
+      text: `SELECT id, user_id FROM threads WHERE id = $1`,
+      values: [threadId],
+    });
+    if (thr.rowCount === 0) {
+      return NextResponse.json({ error: 'Thread not found' }, { status: 404 });
+    }
+    const ownerId = Number(thr.rows[0].user_id);
+    if (ownerId === userId) {
+      return NextResponse.json({ error: 'Cannot add your own snippet to cart' }, { status: 400 });
+    }
+
     // Compute price at add-time, honoring MIT/free and discussion
     const priceCents = await getThreadPriceCents(threadId);
     await database.query({

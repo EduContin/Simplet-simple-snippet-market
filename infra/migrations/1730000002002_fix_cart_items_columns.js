@@ -1,5 +1,5 @@
 exports.up = (pgm) => {
-  // Create table if it doesn't exist
+  // Ensure table exists
   pgm.sql(`
     CREATE TABLE IF NOT EXISTS "cart_items" (
       "id" serial PRIMARY KEY,
@@ -10,26 +10,11 @@ exports.up = (pgm) => {
     );
   `);
 
-  // Ensure required columns exist on older deployments
-  pgm.sql(`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'cart_items' AND column_name = 'price_cents'
-      ) THEN
-        ALTER TABLE "cart_items" ADD COLUMN "price_cents" integer DEFAULT 0 NOT NULL;
-      END IF;
-      IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'cart_items' AND column_name = 'created_at'
-      ) THEN
-        ALTER TABLE "cart_items" ADD COLUMN "created_at" timestamp with time zone DEFAULT current_timestamp NOT NULL;
-      END IF;
-    END$$;
-  `);
+  // Ensure required columns exist (handles older deployments)
+  pgm.sql(`ALTER TABLE "cart_items" ADD COLUMN IF NOT EXISTS "price_cents" integer DEFAULT 0 NOT NULL;`);
+  pgm.sql(`ALTER TABLE "cart_items" ADD COLUMN IF NOT EXISTS "created_at" timestamp with time zone DEFAULT current_timestamp NOT NULL;`);
 
-  // Add unique constraint if not exists
+  // Ensure unique constraint exists for upsert support
   pgm.sql(`
     DO $$
     BEGIN
@@ -47,5 +32,5 @@ exports.up = (pgm) => {
 
 // eslint-disable-next-line no-unused-vars
 exports.down = (pgm) => {
-  pgm.dropTable("cart_items");
+  // No-op safe down; we won't drop columns or constraints.
 };

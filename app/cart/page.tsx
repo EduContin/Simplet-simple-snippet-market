@@ -1,11 +1,16 @@
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 
 async function getCart() {
+  // On the server, fetch needs an absolute URL; forward cookies for session
   const h = headers();
   const host = h.get('host');
   const proto = h.get('x-forwarded-proto') || 'http';
   const base = `${proto}://${host}`;
-  const res = await fetch(`${base}/api/v1/cart`, { cache: 'no-store' });
+  const cookieHeader = cookies().toString();
+  const res = await fetch(`${base}/api/v1/cart`, {
+    cache: 'no-store',
+    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+  });
   if (!res.ok) return { items: [], total_cents: 0 };
   return res.json();
 }
@@ -25,11 +30,18 @@ export default async function CartPage() {
             <ul className="divide-y divide-gray-700/60">
               {items.map((it: any) => (
                 <li key={it.thread_id} className="py-3 flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 pr-4">
                     <div className="text-gray-100 text-sm font-medium truncate">{it.title}</div>
-                    <div className="text-gray-400 text-xs">ID #{it.thread_id}</div>
+                    <div className="text-gray-400 text-xs flex gap-3 mt-0.5">
+                      <span>ID #{it.thread_id}</span>
+                      {it.license && <span>License: {it.license}</span>}
+                    </div>
                   </div>
-                  <div className="text-gray-200 text-sm font-semibold tabular-nums">${(Number(it.price_cents || 0)/100).toFixed(2)}</div>
+                  <div className="text-right">
+                    <div className="text-gray-200 text-sm font-semibold tabular-nums">
+                      {it.price_label ?? `$${(Number(it.price_cents || 0)/100).toFixed(2)}`}
+                    </div>
+                  </div>
                 </li>
               ))}
             </ul>
