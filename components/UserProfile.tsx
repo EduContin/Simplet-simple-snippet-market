@@ -1,41 +1,74 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import customEmojis from "@/models/custom-emojis";
 import Image from "next/image";
 
-const apiUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
 type UserProfileProps = {
   user: any;
-  reputations: any[];
   currentUser: string | null | undefined;
 };
 
 export default function UserProfile({
   user,
-  reputations,
   currentUser,
 }: UserProfileProps) {
-  const [showReputationPopup, setShowReputationPopup] = useState(false);
-  const [reputationChange, setReputationChange] = useState(0);
-  const [reputationComment, setReputationComment] = useState("");
   const [recentThreads, setRecentThreads] = useState([]);
-  const popupRef = useRef<HTMLDivElement>(null);
-  const [userReputations, setReputations] = useState(0);
   const [userLikes, setUserLikes] = useState(0);
-  const [userThreads, setUserThreads] = useState(0);
+  // Remove explicit Threads and Vouches from UI; keep counts for internal metrics only
+  const [likesOnSnippets, setLikesOnSnippets] = useState(0);
+  const [earningsCents, setEarningsCents] = useState(0);
+  const isOwner = !!currentUser && currentUser.toLowerCase() === String(user.username).toLowerCase();
+  const [uploading, setUploading] = useState(false);
 
-  // TODO: Implement awards system API retrival
-  const awards = [
-    { name: "Diamond.svg" },
-    { name: "Diamond.svg" },
-    { name: "Diamond.svg" },
-    { name: "Diamond.svg" },
-    // Add more awards as needed
-  ];
+  const onUpload = async (kind: "avatar" | "banner", file: File) => {
+    try {
+      setUploading(true);
+      const fd = new FormData();
+      fd.append("kind", kind);
+      fd.append("file", file);
+      const res = await fetch("/api/v1/users/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        console.error("Upload failed");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Simple engagement-based awards (up to 8) with clear names for tooltips
+  const computeAwards = () => {
+    const arr: Array<{ name: string; title: string }> = [];
+    const lr = Number(userLikes || 0); // likes received
+    const pc = Number(user.posts_count || 0); // comments/posts made
+    const sc = Number(user.threads_count || 0); // snippets created
+
+    // Likes milestones
+    if (lr >= 1) arr.push({ name: "LikeBronze.svg", title: "First Like Received" });
+    if (lr >= 10) arr.push({ name: "LikeSilver.svg", title: "10 Likes Received" });
+    if (lr >= 50) arr.push({ name: "LikeGold.svg", title: "50 Likes Received" });
+
+    // Comments milestones
+    if (pc >= 1) arr.push({ name: "CommentBronze.svg", title: "First Comment Posted" });
+    if (pc >= 20) arr.push({ name: "CommentSilver.svg", title: "20 Comments Posted" });
+    if (pc >= 100) arr.push({ name: "CommentGold.svg", title: "100 Comments Posted" });
+
+    // Snippets milestones
+    if (sc >= 1) arr.push({ name: "SnippetBronze.svg", title: "First Snippet Published" });
+    if (sc >= 10) arr.push({ name: "SnippetSilver.svg", title: "10 Snippets Published" });
+
+    // High-tier recognition
+    if (lr >= 200) arr.push({ name: "Diamond.svg", title: "Community Diamond (200+ Likes Received)" });
+
+    return arr.slice(0, 8);
+  };
+  const awards = computeAwards();
 
   const limitTitle = (title: string, maxLength: number = 70): string => {
     if (title.length > maxLength) {
@@ -67,22 +100,7 @@ export default function UserProfile({
     }
   };
 
-  useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (
-        popupRef.current &&
-        !popupRef.current.contains(event.target as Node)
-      ) {
-        setShowReputationPopup(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleOutsideClick);
-
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-    };
-  }, []);
+  // reputation UI removed
 
   useEffect(() => {
     const fetchRecentThreads = async () => {
@@ -108,9 +126,7 @@ export default function UserProfile({
         const res = await fetch(`/api/v1/users/${user.username}`);
         if (res.ok) {
           const data = await res.json();
-          setReputations(data.reputation);
           setUserLikes(data.likes_received);
-          setUserThreads(data.threads_count);
         } else {
           console.error("Failed to fetch user data");
         }
@@ -119,8 +135,22 @@ export default function UserProfile({
       }
     };
 
+    const fetchMetrics = async () => {
+      try {
+        const m = await fetch(`/api/v1/users/${user.username}/metrics`);
+        if (m.ok) {
+          const d = await m.json();
+          setLikesOnSnippets(d.likes_on_snippets || 0);
+          setEarningsCents(d.earnings_cents || 0);
+        }
+      } catch (e) {
+        console.error("metrics fetch error", e);
+      }
+    };
+
     fetchData();
-  });
+    fetchMetrics();
+  }, [user.username]);
 
   const renderContentWithEmojisAndBBCode = (content: string) => {
     if (!content) {
@@ -189,126 +219,61 @@ export default function UserProfile({
     });
   };
 
-  const handleReputationSubmit = async () => {
-    try {
-      const res = await fetch(
-        `${apiUrl}/api/v1/users/${encodeURIComponent(
-          user.username,
-        )}/reputation`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            reputation_change: reputationChange,
-            comment: reputationComment,
-          }),
-        },
-      );
-
-      if (res.ok) {
-        window.location.reload();
-      } else {
-        console.error("Failed to update reputation");
-      }
-    } catch (error) {
-      console.error("Error updating reputation:", error);
-    }
-  };
-
-  const handleReputationDelete = async () => {
-    try {
-      const res = await fetch(
-        `${apiUrl}/api/v1/users/${encodeURIComponent(
-          user.username,
-        )}/reputation`,
-        {
-          method: "DELETE",
-        },
-      );
-
-      if (res.ok) {
-        window.location.reload();
-      } else {
-        console.error("Failed to delete reputation");
-      }
-    } catch (error) {
-      console.error("Error deleting reputation:", error);
-    }
-  };
+  // reputation handlers removed
 
   return (
     <div className="min-h-screen text-white relative z-1">
-      <header className="bg-gradient-to-r from-blue-600 to-purple-700 py-4">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-center md:justify-start ">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="w-40 h-40 rounded-lg overflow-hidden shadow-lg mb-6 md:mb-0 md:mr-8"
-            >
-              <Image
-                src={user.avatar_url || "/prof-pic.png"}
-                alt={user.username}
-                width={160}
-                height={160}
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-center md:text-left"
-            >
-              <h1
-                className={`text-4xl font-bold mb-2 ${user.banned ? "line-through text-gray-400" : ""}`}
-              >
-                {user.username}
-              </h1>
-              <p className="text-xl text-blue-200">
-                {user.banned ? "Banned" : user.user_group}
-              </p>
-            </motion.div>
+      {/* Banner area with embedded avatar and controls */}
+      <div className="w-full bg-transparent">
+        <div className="relative w-full h-44 md:h-56 border-b border-gray-700">
+          {user.banner_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.banner_url} alt="Profile banner" className="absolute inset-0 w-full h-full object-cover opacity-80" />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-700 opacity-80" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          <div className="absolute inset-x-4 bottom-[-28px] flex items-end justify-between">
+            <div className="flex items-end gap-3">
+              <div className="w-20 h-20 md:w-28 md:h-28 rounded-lg overflow-hidden border-2 border-white/20 shadow-lg bg-gray-800">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={user.avatar_url || "/prof-pic.png"} alt={user.username} className="w-full h-full object-cover" />
+              </div>
+              <div className="mb-2">
+                <h1 className={`text-2xl md:text-3xl font-bold ${user.banned ? "line-through text-gray-400" : "text-white"}`}>{user.username}</h1>
+                <p className="text-sm md:text-base text-blue-200">{user.banned ? "Banned" : user.user_group}</p>
+              </div>
+            </div>
+            {isOwner && (
+              <div className="flex gap-2 mb-2">
+                <label className="px-3 py-1.5 text-xs md:text-sm rounded-md bg-gray-900/70 border border-gray-700 hover:bg-gray-800 cursor-pointer">
+                  {uploading ? "Uploading…" : "Change Avatar"}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && onUpload("avatar", e.target.files[0])} />
+                </label>
+                <label className="px-3 py-1.5 text-xs md:text-sm rounded-md bg-gray-900/70 border border-gray-700 hover:bg-gray-800 cursor-pointer">
+                  {uploading ? "Uploading…" : "Change Banner"}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && onUpload("banner", e.target.files[0])} />
+                </label>
+              </div>
+            )}
           </div>
         </div>
-      </header>
+        <div className="h-10" />
+      </div>
       <main className="container mx-auto px-2 py-4">
         <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
           {/* Left Column */}
           <div className="md:col-span-2 space-y-3">
-            {/* Reputation and Likes */}
+            {/* Likes summary */}
             <motion.section
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-gray-800 rounded-lg shadow-md p-3"
+              className="rounded-lg border border-gray-700 bg-gray-800/70 backdrop-blur-sm p-3"
             >
-              <div className="grid grid-cols-2 gap-3">
-                <div className="text-center p-2 bg-gray-700 rounded-lg">
-                  <p
-                    className={`text-2xl font-bold ${user.reputation >= 0 ? "text-green-500" : "text-red-500"}`}
-                  >
-                    {userReputations}
-                  </p>
-                  <p className="text-xs text-gray-400">Reputation</p>
-                  <span>
-                    <button
-                      className="font-bold text-base text-blue-400"
-                      onClick={() => setShowReputationPopup(true)}
-                    >
-                      +
-                    </button>
-                  </span>
-                </div>
-                <div className="text-center p-2 bg-gray-700 rounded-lg">
-                  <p className="text-2xl font-bold text-green-500">
-                    {userLikes}
-                  </p>
-                  <p className="text-xs text-gray-400">Likes</p>
-                </div>
+              <div className="text-center p-2 bg-gray-700 rounded-lg">
+                <p className="text-2xl font-bold text-green-500">{userLikes}</p>
+                <p className="text-xs text-gray-400">Likes received</p>
               </div>
             </motion.section>
 
@@ -317,7 +282,7 @@ export default function UserProfile({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
-              className="bg-gray-800 rounded-lg shadow-md p-3"
+              className="rounded-lg border border-gray-700 bg-gray-800/70 backdrop-blur-sm p-3"
             >
               <h2 className="text-base font-semibold mb-2 text-blue-400">
                 Information
@@ -330,7 +295,7 @@ export default function UserProfile({
                     label: "Registration Date",
                     value: timeSinceLastActivity(user.created_at),
                   },
-                  { label: "Last Visit", value: user.last_visit },
+                  { label: "Last Visit", value: user.last_visit || "-" },
                 ].map((item) => (
                   <div key={item.label} className="flex justify-between">
                     <span className="text-gray-400">{item.label}:</span>
@@ -346,45 +311,33 @@ export default function UserProfile({
 
           {/* Center Column */}
           <div className="md:col-span-3 space-y-3">
-            {/* Stats */}
+            {/* Stats + Success */}
             <motion.section
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.5 }}
-              className="bg-gray-800 rounded-lg shadow-md p-3"
+              className="rounded-lg border border-gray-700 bg-gray-800/70 backdrop-blur-sm p-3"
             >
               <h2 className="text-base font-semibold mb-2 text-blue-400">
-                Stats
+                Stats & Success
               </h2>
               <div className="flex justify-between px-10">
                 {[
-                  {
-                    label: "Threads",
-                    value: userThreads,
-                    link: `/users/${user.username}/threads`,
-                  },
                   { label: "Posts", value: user.posts_count },
-                  { label: "Vouches", value: user.vouches },
-                  { label: "Credits", value: user.credits || 0 },
+                  { label: "Likes on Snippets", value: likesOnSnippets },
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">
-                    {stat.link ? (
-                      <Link
-                        href={stat.link}
-                        className="hover:text-blue-400 transition-colors"
-                      >
-                        <p className="font-bold text-xm">{stat.value}</p>
-                        <p className="text-gray-400 text-xs">{stat.label}</p>
-                      </Link>
-                    ) : (
-                      <>
-                        <p className="font-bold text-xm">{stat.value}</p>
-                        <p className="text-gray-400 text-xs">{stat.label}</p>
-                      </>
-                    )}
+                    <p className="font-bold text-xm">{stat.value}</p>
+                    <p className="text-gray-400 text-xs">{stat.label}</p>
                   </div>
                 ))}
               </div>
+              {isOwner && (
+                <div className="mt-4 text-center text-sm text-gray-300">
+                  <span className="text-gray-400 mr-2">Profitability (all-time incoming)</span>
+                  <span className="font-semibold">${(earningsCents / 100).toFixed(2)}</span>
+                </div>
+              )}
             </motion.section>
 
             {/* Signature (Ad Banner) */}
@@ -392,7 +345,7 @@ export default function UserProfile({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.6 }}
-              className="bg-gray-800 rounded-lg shadow-md p-3 mt-auto"
+              className="rounded-lg border border-gray-700 bg-gray-800/70 backdrop-blur-sm p-3 mt-auto"
             >
               <h2 className="text-base font-semibold mb-2 text-blue-400">
                 Signature
@@ -411,46 +364,53 @@ export default function UserProfile({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.8 }}
-              className="bg-gray-800 rounded-lg shadow-md p-3"
+              className="rounded-lg border border-gray-700 bg-gray-800/70 backdrop-blur-sm p-3"
             >
               <h2 className="text-base font-semibold mb-2 text-blue-400">
                 Awards
               </h2>
-              <div className="bg-gray-900 rounded-lg p-2 min-h-[200px] max-h-[400px] overflow-y-auto">
-                <div className="flex flex-wrap gap-2 p-1 items-start content-start">
-                  {awards.map((award, index) => (
-                    <div key={index} className="w-7 h-7 flex-shrink-0">
-                      <Image
-                        src={`/badges/${award.name}`}
-                        alt={award.name.slice(0, -4)}
-                        height={10}
-                        width={10}
-                        className="w-full h-full object-contain"
-                        title={award.name.slice(0, -4)}
-                      />
-                    </div>
-                  ))}
-                </div>
+              <div className="bg-gray-900/60 rounded-lg p-3 min-h-[200px] max-h-[400px] overflow-y-auto">
+                {awards.length === 0 ? (
+                  <div className="text-gray-300 text-sm">No Awards Yet. Code!!</div>
+                ) : (
+                  <div className="flex flex-wrap gap-2 p-1 items-start content-start justify-start w-full">
+                    {awards.map((award, index) => (
+                      <div
+                        key={index}
+                        className="w-8 h-8 flex-shrink-0 cursor-help"
+                        title={award.title}
+                        aria-label={award.title}
+                      >
+                        <Image
+                          src={`/badges/${award.name}`}
+                          alt={award.title}
+                          height={16}
+                          width={16}
+                          className="w-full h-full object-contain hover:scale-105 transition-transform"
+                          title={award.title}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.section>
 
-            {/* Recent Threads */}
+            {/* Recent Snippets */}
             <motion.section
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.7 }}
-              className="bg-gray-800 rounded-lg shadow-md p-3"
+              className="rounded-lg border border-gray-700 bg-gray-800/70 backdrop-blur-sm p-3"
             >
-              <h2 className="text-base font-semibold mb-2 text-blue-400">
-                Recent Threads
-              </h2>
+              <h2 className="text-base font-semibold mb-2 text-blue-400">Recent Snippets</h2>
               <div className="space-y-2">
                 {recentThreads.map((thread: any) => (
                   <div
                     key={thread.id}
-                    className="bg-gray-700 rounded-lg p-2 text-xs"
+                    className="bg-gray-900/60 border border-gray-700 rounded-lg p-2 text-xs"
                   >
-                    <Link href={`/thread/${thread.id}`}>
+                    <Link href={`/snippet/${thread.id}`}>
                       <span
                         className="text-blue-400 hover:underline font-semibold truncate block"
                         title={thread.title}
@@ -469,122 +429,14 @@ export default function UserProfile({
                   </div>
                 ))}
                 {recentThreads.length === 0 && (
-                  <p className="text-gray-400">No recent threads found.</p>
+                  <p className="text-gray-400">No recent snippets found.</p>
                 )}
               </div>
             </motion.section>
           </div>
         </div>
       </main>
-      <AnimatePresence>
-        {showReputationPopup && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
-          >
-            <motion.div
-              ref={popupRef}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: "spring", damping: 20, stiffness: 300 }}
-              className="bg-gray-800 rounded-lg shadow-xl p-8 max-w-md w-full max-h-[80vh] overflow-y-auto"
-            >
-              <h2 className="text-3xl font-bold mb-6 text-blue-400">
-                Reputation
-              </h2>
-              <div className="space-y-4 mb-6">
-                {reputations.map((reputation: any) => (
-                  <div
-                    key={reputation.id}
-                    className="bg-gray-700 rounded-lg p-4 transition-all duration-300 hover:shadow-md"
-                  >
-                    <p>
-                      <Link href={`/users/${reputation.voter_username}`}>
-                        <span className="font-semibold text-blue-400 hover:underline">
-                          {reputation.voter_username}
-                        </span>
-                      </Link>
-                      :{" "}
-                      <span
-                        className={`${
-                          reputation.reputation_change > 0
-                            ? "text-green-500"
-                            : "text-red-500"
-                        } font-bold`}
-                      >
-                        {reputation.reputation_change > 0 ? "+" : ""}
-                        {reputation.reputation_change}
-                      </span>
-                    </p>
-                    <p className="text-gray-400 mt-1">{reputation.comment}</p>
-                  </div>
-                ))}
-              </div>
-              {currentUser && currentUser !== user.username && (
-                <div className="bg-gray-700 rounded-lg p-6 mb-6">
-                  <h3 className="text-2xl font-bold mb-4 text-blue-400">
-                    Add/Edit Reputation
-                  </h3>
-                  <div className="mb-4">
-                    <label className="block mb-2">Reputation Change:</label>
-                    <select
-                      className="w-full bg-gray-600 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={reputationChange || 0}
-                      onChange={(e) =>
-                        setReputationChange(parseInt(e.target.value))
-                      }
-                    >
-                      <option value={0}>0</option>
-                      <option value={5}>+5</option>
-                      <option value={4}>+4</option>
-                      <option value={3}>+3</option>
-                      <option value={2}>+2</option>
-                      <option value={1}>+1</option>
-                      <option value={-1}>-1</option>
-                      <option value={-2}>-2</option>
-                      <option value={-3}>-3</option>
-                      <option value={-4}>-4</option>
-                      <option value={-5}>-5</option>
-                    </select>
-                  </div>
-                  <div className="mb-4">
-                    <label className="block mb-2">Comment:</label>
-                    <textarea
-                      className="w-full bg-gray-600 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={reputationComment}
-                      onChange={(e) => setReputationComment(e.target.value)}
-                      rows={3}
-                    ></textarea>
-                  </div>
-                  <div className="flex justify-end space-x-4">
-                    <button
-                      className="bg-blue-600 text-white rounded-lg px-6 py-2 hover:bg-blue-700 transition-colors duration-300"
-                      onClick={handleReputationSubmit}
-                    >
-                      Submit
-                    </button>
-                    <button
-                      className="bg-red-600 text-white rounded-lg px-6 py-2 hover:bg-red-700 transition-colors duration-300"
-                      onClick={handleReputationDelete}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              )}
-              <button
-                className="w-full bg-gray-700 text-blue-400 rounded-lg px-6 py-3 hover:bg-gray-600 transition-colors duration-300"
-                onClick={() => setShowReputationPopup(false)}
-              >
-                Close
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+  {/* Reputation components removed as requested */}
     </div>
   );
 }

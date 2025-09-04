@@ -27,6 +27,9 @@ export async function PUT(req: Request) {
       case "profilePicture":
         await updateProfilePicture(session.user.id, data.avatarUrl);
         break;
+      case "profileBanner":
+        await updateProfileBanner(session.user.id, data.bannerUrl);
+        break;
       case "password":
         await updatePassword(
           session.user.id,
@@ -81,6 +84,22 @@ async function updateProfilePicture(userId: string, avatarUrl: string) {
     });
   } catch (error) {
     throw new Error("Invalid image URL or unable to fetch the image");
+  }
+}
+
+async function updateProfileBanner(userId: string, bannerUrl: string) {
+  try {
+    const response = await fetch(bannerUrl);
+    const contentLength = response.headers.get("content-length");
+    if (contentLength && parseInt(contentLength) > MAX_IMAGE_SIZE) {
+      throw new Error("Banner size exceeds the maximum allowed (5MB)");
+    }
+    await database.query({
+      text: "UPDATE users SET banner_url = $1 WHERE id = $2",
+      values: [bannerUrl, userId],
+    });
+  } catch (error) {
+    throw new Error("Invalid image URL or unable to fetch the banner image");
   }
 }
 

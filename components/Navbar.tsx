@@ -27,6 +27,7 @@ import { ShoppingCart } from "lucide-react";
 const Navbar: React.FC = () => {
   const { data: session } = useSession();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarTs, setAvatarTs] = useState<number>(0);
   const [balanceCents, setBalanceCents] = useState<number | null>(null);
   const userId = useMemo(() => session?.user && (session.user as any).id, [session]);
 
@@ -35,10 +36,14 @@ const Navbar: React.FC = () => {
       if (session?.user?.name) {
         try {
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_APP_URL}/api/v1/users/${session.user.name}`,
+            `${process.env.NEXT_PUBLIC_APP_URL}/api/v1/users/${encodeURIComponent(session.user.name)}`,
+            { cache: 'no-store' }
           );
-          const userData = await response.json();
-          setAvatarUrl(userData.avatar_url);
+          if (response.ok) {
+            const userData = await response.json();
+            setAvatarUrl(userData.avatar_url);
+            setAvatarTs(Date.now());
+          }
         } catch (error) {
           console.error("Error fetching avatar URL:", error);
         }
@@ -151,7 +156,7 @@ const Navbar: React.FC = () => {
                   >
                     <Avatar className="h-6 w-6">
                       <AvatarImage
-                        src={avatarUrl || "/prof-pic.png"}
+                        src={(avatarUrl ? `${avatarUrl}?t=${avatarTs}` : "/prof-pic.png")}
                         alt={session.user.name || "User"}
                       />
                       <AvatarFallback
@@ -217,7 +222,7 @@ const Navbar: React.FC = () => {
                   />
                   <DropdownMenuItem asChild>
                     <Link
-                      href={`/users/${session.user.name}`}
+                      href={`/users/${encodeURIComponent(session.user.name || '')}`}
                       className="flex items-center px-3 py-2 text-sm cursor-pointer transition-colors"
                       style={{ color: 'var(--fg-default)' }}
                       onMouseEnter={(e) => {
