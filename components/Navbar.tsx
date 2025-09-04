@@ -22,6 +22,7 @@ import {
   LogOut,
   Wallet
 } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 
 const Navbar: React.FC = () => {
   const { data: session } = useSession();
@@ -127,6 +128,14 @@ const Navbar: React.FC = () => {
                     R$ {(balanceCents / 100).toFixed(2)}
                   </span>
                 )}
+              </Link>
+            )}
+            {session?.user && (
+              <Link href="/cart" className="relative flex items-center gap-2 px-2 py-1 rounded-md border"
+                style={{ borderColor: 'var(--border-default)', color: 'var(--fg-default)', backgroundColor: 'var(--canvas)' }}
+              >
+                <ShoppingCart className="h-4 w-4" />
+                <span className="text-xs font-medium opacity-90">Cart</span>
               </Link>
             )}
             {session?.user ? (

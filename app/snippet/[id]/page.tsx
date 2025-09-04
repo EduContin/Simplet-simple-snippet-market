@@ -3,6 +3,7 @@ import SnippetCode from "@/components/SnippetCode";
 import { mapCategoryToLanguage } from "@/lib/language";
 import CommentsSection from "@/components/CommentsSection";
 import { headers } from "next/headers";
+import AddToCartClient from "@/components/AddToCartClient";
 
 async function getThread(threadId: string) {
   const h = headers();
@@ -42,6 +43,11 @@ export default async function SnippetPage({ params }: { params: { id: string } }
       <div className="bg-gray-800/90 backdrop-blur-sm rounded-lg p-6 shadow-lg">
         <h1 className="text-2xl font-bold mb-4 text-gray-100">{thread?.title || "Snippet"}</h1>
         <SnippetCode code={code} language={language} />
+        {thread?.id && (
+          <div className="mt-4">
+            <AddToCartClient threadId={Number(thread.id)} />
+          </div>
+        )}
         {thread?.id && (
           <CommentsSection threadId={Number(thread.id)} />
         )}
