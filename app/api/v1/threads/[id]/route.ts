@@ -1,187 +1,93 @@
 import { NextRequest, NextResponse } from "next/server";
 import database from "@/infra/database";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get("page") || "1");
-  const pageSize = parseInt(searchParams.get("pageSize") || "10");
-  const categorySlug = searchParams.get("categorySlug");
-  const threadId = searchParams.get("threadId");
+async function assertOwner(userId: number, threadId: number) {
+  const res = await database.query({
+    text: "SELECT user_id FROM threads WHERE id = $1",
+    values: [threadId],
+  });
+  if (res.rowCount === 0) return { ok: false, status: 404 } as const;
+  if (Number(res.rows[0].user_id) !== Number(userId)) return { ok: false, status: 403 } as const;
+  return { ok: true } as const;
+}
 
-  const offset = (page - 1) * pageSize;
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+  const session: any = await getServerSession(authOptions as any);
+  const meId = session?.user?.id;
+  if (!meId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const threadId = Number(params.id);
+  if (!Number.isFinite(threadId)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+
+  const { title, code } = await request.json();
+  const own = await assertOwner(meId, threadId);
+  if (!own.ok) return NextResponse.json({ error: own.status === 403 ? "Forbidden" : "Not found" }, { status: own.status });
 
   try {
-    let query = `
-      SELECT t.*, u.username,  c.name AS category_name, 
-             COUNT(p.id) AS post_count, 
-             MAX(p.created_at) AS last_post_at
-      FROM threads t
-      JOIN users u ON t.user_id = u.id
-      JOIN categories c ON t.category_id = c.id
-      LEFT JOIN posts p ON t.id = p.thread_id
-    `;
-
-    const queryParams: any[] = [];
-    if (categorySlug) {
-      query += ` WHERE LOWER(REPLACE(c.name, ' ', '-')) = $1`;
-      queryParams.push(categorySlug);
-    } else if (threadId) {
-      query += ` WHERE t.id = $1`;
-      queryParams.push(threadId);
-    }
-
-    query += `
-      GROUP BY t.id, u.username, c.name
-      ORDER BY t.updated_at DESC
-      LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
-    `;
-
-    queryParams.push(pageSize, offset);
-
-    const result = await database.query({
-      text: query,
-      values: queryParams,
+    await database.withTransaction(async (client) => {
+      if (title && typeof title === "string") {
+        await database.queryWithClient(client, { text: "UPDATE threads SET title = $1, updated_at = NOW() WHERE id = $2", values: [title, threadId] });
+      }
+      if (typeof code === "string") {
+        const first = await database.queryWithClient(client, {
+          text: "SELECT id FROM posts WHERE thread_id = $1 ORDER BY created_at ASC LIMIT 1",
+          values: [threadId],
+        });
+        if (first.rowCount > 0) {
+          const wrapped = `[code]${code}\n[/code]`;
+          await database.queryWithClient(client, { text: "UPDATE posts SET content = $1, updated_at = NOW() WHERE id = $2", values: [wrapped, first.rows[0].id] });
+        }
+      }
     });
-
-    return NextResponse.json(result.rows);
-  } catch (error) {
-    console.error("Error fetching threads:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("PATCH /threads/:id failed", e);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest) {
-  const { title, content, userId, categoryId } = await request.json();
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  const session: any = await getServerSession(authOptions as any);
+  const meId = session?.user?.id;
+  if (!meId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const threadId = Number(params.id);
+  if (!Number.isFinite(threadId)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+
+  const own = await assertOwner(meId, threadId);
+  if (!own.ok) return NextResponse.json({ error: own.status === 403 ? "Forbidden" : "Not found" }, { status: own.status });
 
   try {
-    const result = await database.query({
-      text: `
-        WITH new_thread AS (
-          INSERT INTO threads (title, user_id, category_id)
-          VALUES ($1, $2, $3)
-          RETURNING id
-        )
-        INSERT INTO posts (content, user_id, thread_id)
-        SELECT $4, $2, id FROM new_thread
-        RETURNING thread_id
-      `,
-      values: [title, userId, categoryId, content],
-    });
-
-    const threadId = result.rows[0].thread_id;
-
-    return NextResponse.json({ threadId }, { status: 201 });
-  } catch (error) {
-    console.error("Error creating thread:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) {
-  const threadId = params.id;
-
-  try {
-    // Start a transaction
-    await database.query("BEGIN");
-
-    // First, get all the likes that will be deleted and the users who made posts in the thread
-    const likesAndPostsInfo = await database.query({
-      text: `
-        SELECT 
-          l.user_id AS liker_id, 
-          p.user_id AS poster_id, 
-          COUNT(*) AS like_count
-        FROM posts p
-        LEFT JOIN likes l ON p.id = l.post_id
-        WHERE p.thread_id = $1
-        GROUP BY l.user_id, p.user_id
-      `,
-      values: [threadId],
-    });
-
-    // Update users' likes_received count
-    for (const row of likesAndPostsInfo.rows) {
-      if (row.liker_id) {
-        await database.query({
-          text: `
-            UPDATE users
-            SET likes_received = likes_received - $1
-            WHERE id = $2
-          `,
-          values: [row.like_count, row.poster_id],
-        });
-      }
-    }
-
-    // Delete likes associated with the posts in the thread
-    await database.query({
-      text: `
-        DELETE FROM likes
-        WHERE post_id IN (SELECT id FROM posts WHERE thread_id = $1)
-      `,
-      values: [threadId],
-    });
-
-    // Delete the posts
-    const users = await database.query({
-      text: "DELETE FROM posts WHERE thread_id = $1 RETURNING user_id",
-      values: [threadId],
-    });
-
-    //Update posts count from every user
-    if(users.rows.length > 0){
-      for(let i = 0; i < users.rows.length;  i++){
-        await database.query({
-          text : `UPDATE users SET posts_count = posts_count-1 WHERE id=$1`,
-          values : [users.rows[i].user_id]
-        });
-      }
-    }
-
-    // Finally, delete the thread
-    const result = await database.query({
-      text: "DELETE FROM threads WHERE id = $1 RETURNING user_id",
-      values: [threadId],
-    });
-
-    // Update user threads_count
-    if(result.rows.length > 0){
-      await database.query({
-        text: `UPDATE users SET threads_count = threads_count -1 WHERE id=$1`,
-        values : [result.rows[0].user_id]
+    await database.withTransaction(async (client) => {
+      // get owner id and posts count for counters adjustment
+      const threadInfo = await database.queryWithClient(client, {
+        text: `SELECT user_id FROM threads WHERE id = $1`,
+        values: [threadId],
       });
-    }
-    
+      const ownerId = threadInfo.rows?.[0]?.user_id;
 
+      // Count posts to decrement posts_count properly
+      const postsCountRes = await database.queryWithClient(client, {
+        text: `SELECT COUNT(1) AS c FROM posts WHERE thread_id = $1`,
+        values: [threadId],
+      });
+      const postsCount = Number(postsCountRes.rows?.[0]?.c ?? 0);
 
-    // Commit the transaction
-    await database.query("COMMIT");
+      // Delete thread (cascades posts and likes)
+      await database.queryWithClient(client, { text: "DELETE FROM threads WHERE id = $1", values: [threadId] });
 
-    // Check if any thread was deleted
-    if (result.rowCount === 0) {
-      return NextResponse.json({ error: "Thread not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(
-      { message: "Thread and associated data deleted successfully" },
-      { status: 200 },
-    );
-  } catch (error) {
-    // Rollback the transaction in case of error
-    await database.query("ROLLBACK");
-    console.error("Error deleting thread:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
+      if (ownerId) {
+        await database.queryWithClient(client, {
+          text: `UPDATE users SET threads_count = GREATEST(0, threads_count - 1), posts_count = GREATEST(0, posts_count - $1) WHERE id = $2`,
+          values: [postsCount, ownerId],
+        });
+      }
+    });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("DELETE /threads/:id failed", e);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

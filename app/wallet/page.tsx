@@ -119,8 +119,8 @@ export default function WalletPage() {
         </div>
 
         {tab === 'card' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div className="p-4 border border-gray-700 rounded bg-gray-900/50">
               <h2 className="text-lg font-semibold text-gray-100 mb-2">Add a card</h2>
               <div className="space-y-2">
                 <input value={cardToken} onChange={(e) => setCardToken(e.target.value)} placeholder="PSP card token" className="w-full px-3 py-2 rounded bg-gray-800 text-gray-100 border border-gray-700" />
@@ -132,7 +132,9 @@ export default function WalletPage() {
                   <input value={cardExpMonth} onChange={(e) => setCardExpMonth(e.target.value)} placeholder="Exp month" className="px-3 py-2 rounded bg-gray-800 text-gray-100 border border-gray-700" />
                   <input value={cardExpYear} onChange={(e) => setCardExpYear(e.target.value)} placeholder="Exp year" className="px-3 py-2 rounded bg-gray-800 text-gray-100 border border-gray-700" />
                 </div>
-                <button className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-50" onClick={handleAttach}>Save card</button>
+                <div className="flex items-center gap-2">
+                  <button className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-50" onClick={handleAttach}>Save card</button>
+                </div>
                 {msg && <div className="text-xs text-gray-300">{msg}</div>}
               </div>
             </div>
@@ -148,6 +150,7 @@ export default function WalletPage() {
                 ))}
                 <div className="flex items-center gap-2 pt-2">
                   <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount (R$)" className="flex-1 px-3 py-2 rounded bg-gray-800 text-gray-100 border border-gray-700" />
+                  <button className="px-3 py-2 rounded bg-blue-600 text-white text-sm" onClick={() => { const first = methods[0]; if (first) handleTopUp(first.id); }}>Top up with first card</button>
                 </div>
               </div>
             </div>

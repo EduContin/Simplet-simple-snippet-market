@@ -17,17 +17,19 @@ export default function MySnippetsPage() {
 	const [created, setCreated] = useState<ThreadRow[]>([]);
 	const [liked, setLiked] = useState<ThreadRow[]>([]);
 	const [loading, setLoading] = useState(false);
+	const [myId, setMyId] = useState<number | null>(null);
 
 		const refresh = async () => {
 		setLoading(true);
-		try {
-				const meRes = await fetch('/api/auth/session', { cache: 'no-store' });
-				const me = await meRes.json();
-				const userId = me?.user?.id;
-				if (userId) {
-					const r1 = await fetch(`/api/v1/threads?userId=${userId}&page=1&pageSize=100`, { cache: 'no-store' });
-					if (r1.ok) setCreated(await r1.json());
-				}
+			try {
+					const meRes = await fetch('/api/auth/session', { cache: 'no-store' });
+					const me = await meRes.json();
+					const userId = me?.user?.id;
+					if (userId) {
+						setMyId(userId);
+						const r1 = await fetch(`/api/v1/threads?userId=${userId}&page=1&pageSize=100`, { cache: 'no-store' });
+						if (r1.ok) setCreated(await r1.json());
+					}
 				// Load liked list from localStorage (client-only)
 				try {
 					const raw = localStorage.getItem('likedThreads');
@@ -65,7 +67,54 @@ export default function MySnippetsPage() {
 		</div>
 	);
 
-	const renderList = (rows: ThreadRow[]) => (
+		const handleDelete = async (threadId: number) => {
+			if (!confirm('Delete this snippet? This cannot be undone.')) return;
+			try {
+				const r = await fetch(`/api/v1/threads/${threadId}`, { method: 'DELETE' });
+				if (r.ok) {
+					// remove locally and refresh
+					setCreated(prev => prev.filter(t => t.id !== threadId));
+				} else {
+					const er = await r.json().catch(() => ({ error: 'Failed' }));
+					alert(er.error || 'Failed to delete');
+				}
+			} catch (e: any) { alert(e.message || 'Error'); }
+		};
+
+		const handleEdit = async (thread: ThreadRow) => {
+			// Fetch first post content to edit code
+			let code = '';
+			try {
+				const pr = await fetch(`/api/v1/posts?threadId=${thread.id}`, { cache: 'no-store' });
+				if (pr.ok) {
+					const posts = await pr.json();
+					const first = posts?.[0]?.content as string | undefined;
+					if (first) {
+						const m = first.match(/\[code\]([\s\S]*?)\[\/code\]/i);
+						code = (m?.[1] || first).trim();
+					}
+				}
+			} catch {}
+
+			const newTitle = prompt('Edit title', thread.title)?.trim();
+			if (!newTitle) return;
+			const newCode = prompt('Edit code (first post only) — license unchanged', code)?.toString();
+			if (newTitle === thread.title && (!newCode || newCode === code)) return;
+			try {
+				const r = await fetch(`/api/v1/threads/${thread.id}`, {
+					method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ title: newTitle, code: newCode ?? undefined })
+				});
+				if (r.ok) {
+					setCreated(prev => prev.map(t => t.id === thread.id ? { ...t, title: newTitle } : t));
+				} else {
+					const er = await r.json().catch(() => ({ error: 'Failed' }));
+					alert(er.error || 'Failed to update');
+				}
+			} catch (e: any) { alert(e.message || 'Error'); }
+		};
+
+		const renderList = (rows: ThreadRow[], own: boolean) => (
 		<ul className="divide-y divide-gray-700">
 			{rows.map((t) => (
 				<li key={t.id} className="py-3 flex items-center justify-between">
@@ -74,11 +123,17 @@ export default function MySnippetsPage() {
 						<div className="text-xs text-gray-400">{t.category_name} • Replies {Math.max(0, t.post_count - 1)}</div>
 						<div className="mt-2 w-64"><Chart value={Math.min(100, (t.post_count - 1) * 5)} /></div>
 					</div>
-					<div className="w-56 grid grid-cols-3 gap-2">
+						<div className="w-56 grid grid-cols-3 gap-2 text-right">
 						<StatCard label="Replies" value={String(Math.max(0, t.post_count - 1))} />
 						<StatCard label="Popularity" value={`${Math.min(100, (t.post_count - 1) * 5)}%`} />
-						<StatCard label="Revenue" value={`$${(0).toFixed(2)}`} />
+							{own && <StatCard label="Revenue" value={`$${(0).toFixed(2)}`} />}
 					</div>
+						{own && (
+							<div className="ml-4 flex items-center gap-2">
+								<button onClick={() => handleEdit(t)} className="px-2 py-1 rounded bg-gray-700/60 text-gray-200 text-xs hover:bg-gray-700">Edit</button>
+								<button onClick={() => handleDelete(t.id)} className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500">Delete</button>
+							</div>
+						)}
 				</li>
 			))}
 			{rows.length === 0 && (
@@ -97,12 +152,12 @@ export default function MySnippetsPage() {
 						<button onClick={() => setTab('liked')} className={`px-3 py-1.5 rounded-md ${tab==='liked'?'bg-blue-600 text-white':'bg-gray-700/60 text-gray-200'}`}>Liked</button>
 					</div>
 				</div>
-				{loading ? (
+						{loading ? (
 					<div className="text-gray-300">Loading…</div>
 				) : tab === 'created' ? (
-					renderList(created)
+							renderList(created, true)
 				) : (
-					renderList(liked)
+							renderList(liked, false)
 				)}
 			</div>
 		</main>

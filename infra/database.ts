@@ -21,6 +21,33 @@ async function query(queryObject: any) {
   }
 }
 
+async function queryWithClient(client: Client, queryObject: any) {
+  return client.query(queryObject as any);
+}
+
+async function withTransaction<T>(fn: (client: Client) => Promise<T>): Promise<T> {
+  const client = await getNewClient();
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("Error during transaction rollback:", rollbackError);
+    }
+    throw error;
+  } finally {
+    try {
+      await client.end();
+    } catch (endError) {
+      console.error("Error closing client connection:", endError);
+    }
+  }
+}
+
 async function getNewClient() {
   const client = new Client({
     host: process.env.POSTGRES_HOST,
@@ -39,6 +66,8 @@ async function getNewClient() {
 
 const database = {
   query,
+  queryWithClient,
+  withTransaction,
   getNewClient,
 };
 
