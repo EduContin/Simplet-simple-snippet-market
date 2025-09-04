@@ -16,6 +16,7 @@ interface Thread {
   post_count: number;
   last_post_at: string;
   first_post_likes?: number;
+  first_post_id?: number;
   announcements: boolean;
 }
 
@@ -89,23 +90,35 @@ const ThreadList: React.FC<ThreadListProps> = ({ threads, view = "table", previe
     } catch {}
   }, [dismissed]);
 
-  // hydrate liked state from localStorage
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("likedThreads");
-      if (raw) {
-        const arr = JSON.parse(raw) as Thread[];
-        const map: Record<number, boolean> = {};
-        arr.forEach((t) => (map[t.id] = true));
-        setLikedMap(map);
-      }
-    } catch {}
-  }, []);
-
   const visibleThreads = useMemo(
     () => sortedThreads.filter((t) => !dismissed[t.id]),
     [sortedThreads, dismissed]
   );
+
+  // Fetch counts and per-user liked state for visible first posts
+  const visibleIdsKey = useMemo(() => visibleThreads.map(t => t.id).join(','), [visibleThreads]);
+  useEffect(() => {
+    const pids = visibleThreads.map((t) => (t as any).first_post_id).filter(Boolean);
+    if (pids.length === 0) return;
+    const qs = encodeURIComponent(pids.join(","));
+    fetch(`/api/v1/likes?postIds=${qs}`, { cache: 'no-store' })
+      .then(async (r) => {
+        if (!r.ok) return;
+        const data = await r.json();
+        const newLikes: Record<number, number> = {};
+        const newLiked: Record<number, boolean> = {};
+        for (const t of visibleThreads) {
+          const pid = (t as any).first_post_id;
+          if (!pid) continue;
+          const entry = data[pid] || { count: (t as any).first_post_likes ?? 0, liked: false };
+          newLikes[t.id] = entry.count;
+          newLiked[t.id] = !!entry.liked;
+        }
+        setLikes(newLikes);
+        setLikedMap(newLiked);
+      })
+      .catch(() => {});
+  }, [visibleIdsKey]);
 
   // Re-run syntax highlighting when visible content changes
   useEffect(() => {
@@ -124,30 +137,26 @@ const ThreadList: React.FC<ThreadListProps> = ({ threads, view = "table", previe
     try {
       const userId = (session?.user as any)?.id;
       if (!userId) return;
-      // fetch first post id for this thread
-      const pr = await fetch(`/api/v1/posts?threadId=${thread.id}`, { cache: 'no-store' });
-      if (!pr.ok) return;
-      const posts = await pr.json();
-      const first = posts?.[0];
-      if (!first) return;
+      // prefer server-provided first_post_id
+      const firstPostId = (thread as any).first_post_id;
+      let postId = firstPostId;
+      if (!postId) {
+        const pr = await fetch(`/api/v1/posts?threadId=${thread.id}`, { cache: 'no-store' });
+        if (!pr.ok) return;
+        const posts = await pr.json();
+        postId = posts?.[0]?.id;
+        if (!postId) return;
+      }
       const lr = await fetch('/api/v1/likes', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId: first.id, userId })
+        body: JSON.stringify({ postId, userId })
       });
       if (!lr.ok) return;
       const data = await lr.json();
       setLikes((m) => ({ ...m, [thread.id]: data.likes_count }));
       setLikedMap((m) => ({ ...m, [thread.id]: data.is_liked_by_user }));
-      // Update localStorage list for My Snippets page
-      try {
-        const raw = localStorage.getItem('likedThreads');
-        let arr: Thread[] = raw ? JSON.parse(raw) : [];
-        const exists = arr.some((t) => t.id === thread.id);
-        if (data.is_liked_by_user && !exists) arr = [{ ...thread }, ...arr];
-        if (!data.is_liked_by_user && exists) arr = arr.filter((t) => t.id !== thread.id);
-        localStorage.setItem('likedThreads', JSON.stringify(arr));
-      } catch {}
-      window.dispatchEvent(new CustomEvent('likes:changed'));
+      // Notify other parts of the app optionally
+      try { window.dispatchEvent(new CustomEvent('likes:changed')); } catch {}
     } catch {}
   };
 

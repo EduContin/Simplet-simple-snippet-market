@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import database from "@/infra/database";
 import { slugify } from "@/models/slugify";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,14 +12,20 @@ export async function GET(request: NextRequest) {
   const threadId = searchParams.get("threadId");
   const userId = searchParams.get("userId");
   const announcementsParam = searchParams.get("announcements"); 
+  const likedBy = searchParams.get("likedBy");
 
   const offset = (page - 1) * pageSize;
 
   try {
     let query = `
-      SELECT t.*, u.username, c.name AS category_name, 
-             COUNT(p.id) AS post_count, 
-             MAX(p.created_at) AS last_post_at
+      SELECT
+        t.*,
+        u.username,
+        c.name AS category_name,
+        COUNT(p.id) AS post_count,
+        MAX(p.created_at) AS last_post_at,
+        (SELECT id FROM posts WHERE thread_id = t.id ORDER BY created_at ASC LIMIT 1) AS first_post_id,
+        COALESCE((SELECT likes_count FROM posts WHERE thread_id = t.id ORDER BY created_at ASC LIMIT 1), 0) AS first_post_likes
       FROM threads t
       JOIN users u ON t.user_id = u.id
       JOIN categories c ON t.category_id = c.id
@@ -27,7 +35,7 @@ export async function GET(request: NextRequest) {
     const queryParams: any[] = [];
     const whereConditions: string[] = [];
 
-    if (categoryId) {
+  if (categoryId) {
       whereConditions.push(`t.category_id = $${queryParams.length + 1}`);
       queryParams.push(categoryId);
     }
@@ -40,6 +48,21 @@ export async function GET(request: NextRequest) {
     if (userId) {
       whereConditions.push(`t.user_id = $${queryParams.length + 1}`);
       queryParams.push(userId);
+    }
+
+    if (likedBy && likedBy.toLowerCase() === "me") {
+      // Resolve current user from session
+      const session: any = await getServerSession(authOptions as any);
+      const meId = session?.user?.id;
+      if (!meId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM likes l
+        WHERE l.user_id = $${queryParams.length + 1}
+          AND l.post_id = (SELECT id FROM posts WHERE thread_id = t.id ORDER BY created_at ASC LIMIT 1)
+      )`);
+      queryParams.push(meId);
     }
 
     if (announcementsParam && announcementsParam.toLowerCase() === "true") {

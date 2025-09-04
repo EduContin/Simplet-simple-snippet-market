@@ -29,16 +29,9 @@ export default function MySnippetsPage() {
 						setMyId(userId);
 						const r1 = await fetch(`/api/v1/threads?userId=${userId}&page=1&pageSize=100`, { cache: 'no-store' });
 						if (r1.ok) setCreated(await r1.json());
+			const r2 = await fetch(`/api/v1/threads?likedBy=me&page=1&pageSize=100`, { cache: 'no-store' });
+			if (r2.ok) setLiked(await r2.json());
 					}
-				// Load liked list from localStorage (client-only)
-				try {
-					const raw = localStorage.getItem('likedThreads');
-					if (raw) {
-						const arr = JSON.parse(raw) as ThreadRow[];
-						setLiked(arr);
-						(window as any).__likedThreads = arr;
-					}
-				} catch {}
 		} catch {}
 		setLoading(false);
 	};
