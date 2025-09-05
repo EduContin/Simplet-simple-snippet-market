@@ -33,20 +33,27 @@ const Navbar: React.FC = () => {
 
   useEffect(() => {
     const fetchAvatarUrl = async () => {
-      if (session?.user?.name) {
-        try {
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_APP_URL}/api/v1/users/${encodeURIComponent(session.user.name)}`,
-            { cache: 'no-store' }
-          );
+      if (!session?.user) return;
+      try {
+        // Prefer authenticated endpoint bound to session
+        const meRes = await fetch(`/api/v1/users/me`, { cache: 'no-store' });
+        if (meRes.ok) {
+          const me = await meRes.json();
+          setAvatarUrl(me.avatar_url);
+          setAvatarTs(Date.now());
+          return;
+        }
+        // Fallback to username-based fetch
+        if (session.user.name) {
+          const response = await fetch(`/api/v1/users/${encodeURIComponent(session.user.name)}`, { cache: 'no-store' });
           if (response.ok) {
             const userData = await response.json();
             setAvatarUrl(userData.avatar_url);
             setAvatarTs(Date.now());
           }
-        } catch (error) {
-          console.error("Error fetching avatar URL:", error);
         }
+      } catch (error) {
+        console.error("Error fetching avatar URL:", error);
       }
     };
 
@@ -75,6 +82,7 @@ const Navbar: React.FC = () => {
   const navigationItems = [
     { href: "/", label: "Home", icon: Home },
     { href: "/my-snippets", label: "My Snippets", icon: BookOpen },
+  { href: "/projects", label: "Projects", icon: BookOpen },
     { href: "/help", label: "Help", icon: HelpCircle },
   ];
 
