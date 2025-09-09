@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 type ThreadRow = {
@@ -10,6 +10,7 @@ type ThreadRow = {
 	category_name: string;
 	post_count: number;
 	last_post_at: string;
+	first_post_likes?: number;
 };
 
 export default function MySnippetsPage() {
@@ -17,21 +18,19 @@ export default function MySnippetsPage() {
 	const [created, setCreated] = useState<ThreadRow[]>([]);
 	const [liked, setLiked] = useState<ThreadRow[]>([]);
 	const [loading, setLoading] = useState(false);
-	const [myId, setMyId] = useState<number | null>(null);
 
-		const refresh = async () => {
+	const refresh = async () => {
 		setLoading(true);
-			try {
-					const meRes = await fetch('/api/auth/session', { cache: 'no-store' });
-					const me = await meRes.json();
-					const userId = me?.user?.id;
-					if (userId) {
-						setMyId(userId);
-						const r1 = await fetch(`/api/v1/threads?userId=${userId}&page=1&pageSize=100`, { cache: 'no-store' });
-						if (r1.ok) setCreated(await r1.json());
-			const r2 = await fetch(`/api/v1/threads?likedBy=me&page=1&pageSize=100`, { cache: 'no-store' });
-			if (r2.ok) setLiked(await r2.json());
-					}
+		try {
+			const meRes = await fetch('/api/auth/session', { cache: 'no-store' });
+			const me = await meRes.json();
+			const userId = me?.user?.id;
+			if (userId) {
+				const r1 = await fetch(`/api/v1/threads?userId=${userId}&page=1&pageSize=100`, { cache: 'no-store' });
+				if (r1.ok) setCreated(await r1.json());
+				const r2 = await fetch(`/api/v1/threads?likedBy=me&page=1&pageSize=100`, { cache: 'no-store' });
+				if (r2.ok) setLiked(await r2.json());
+			}
 		} catch {}
 		setLoading(false);
 	};
@@ -43,12 +42,52 @@ export default function MySnippetsPage() {
 		return () => window.removeEventListener('likes:changed', onLikes as any);
 	}, []);
 
-	const Chart = ({ value }: { value: number }) => {
-		// Tiny animated bar approximating popularity (0-100)
-		const width = Math.max(0, Math.min(100, value));
+	const Sparkline = ({ threadId }: { threadId: number }) => {
+		const [series, setSeries] = useState<{ date: string; count: number; cumulative: number }[]>([]);
+		const [loading, setLoading] = useState(false);
+
+		const load = async () => {
+			setLoading(true);
+			try {
+				const r = await fetch(`/api/v1/threads/${threadId}/likes/timeseries?days=90`, { cache: 'no-store' });
+				if (r.ok) {
+					const js = await r.json();
+					setSeries(js.series || []);
+				}
+			} catch {}
+			setLoading(false);
+		};
+
+		useEffect(() => {
+			load();
+			const onLikes = (e: any) => {
+				if (!e?.detail?.threadId || e.detail.threadId === threadId) load();
+			};
+			window.addEventListener('likes:changed', onLikes as any);
+			return () => window.removeEventListener('likes:changed', onLikes as any);
+		}, [threadId]);
+
+		const path = useMemo(() => {
+			if (!series.length) return '';
+			const w = 256, h = 40;
+			const maxVal = Math.max(1, ...series.map(s => s.cumulative));
+			const dx = w / Math.max(1, series.length - 1);
+			return series.map((s, i) => {
+				const x = i * dx;
+				const y = h - (s.cumulative / maxVal) * (h - 4) - 2;
+				return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+			}).join(' ');
+		}, [series]);
+
 		return (
-			<div className="h-2 w-full bg-gray-700/60 rounded">
-				<div className="h-2 bg-emerald-500 rounded transition-all" style={{ width: `${width}%` }} />
+			<div className="w-64 h-10">
+				{path ? (
+					<svg viewBox="0 0 256 40" className="w-64 h-10">
+						<path d={path} fill="none" stroke="#22c55e" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+					</svg>
+				) : (
+					<div className="text-xs text-gray-500">{loading ? 'Loading…' : 'No likes yet'}</div>
+				)}
 			</div>
 		);
 	};
@@ -60,73 +99,20 @@ export default function MySnippetsPage() {
 		</div>
 	);
 
-		const handleDelete = async (threadId: number) => {
-			if (!confirm('Delete this snippet? This cannot be undone.')) return;
-			try {
-				const r = await fetch(`/api/v1/threads/${threadId}`, { method: 'DELETE' });
-				if (r.ok) {
-					// remove locally and refresh
-					setCreated(prev => prev.filter(t => t.id !== threadId));
-				} else {
-					const er = await r.json().catch(() => ({ error: 'Failed' }));
-					alert(er.error || 'Failed to delete');
-				}
-			} catch (e: any) { alert(e.message || 'Error'); }
-		};
-
-		const handleEdit = async (thread: ThreadRow) => {
-			// Fetch first post content to edit code
-			let code = '';
-			try {
-				const pr = await fetch(`/api/v1/posts?threadId=${thread.id}`, { cache: 'no-store' });
-				if (pr.ok) {
-					const posts = await pr.json();
-					const first = posts?.[0]?.content as string | undefined;
-					if (first) {
-						const m = first.match(/\[code\]([\s\S]*?)\[\/code\]/i);
-						code = (m?.[1] || first).trim();
-					}
-				}
-			} catch {}
-
-			const newTitle = prompt('Edit title', thread.title)?.trim();
-			if (!newTitle) return;
-			const newCode = prompt('Edit code (first post only) — license unchanged', code)?.toString();
-			if (newTitle === thread.title && (!newCode || newCode === code)) return;
-			try {
-				const r = await fetch(`/api/v1/threads/${thread.id}`, {
-					method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ title: newTitle, code: newCode ?? undefined })
-				});
-				if (r.ok) {
-					setCreated(prev => prev.map(t => t.id === thread.id ? { ...t, title: newTitle } : t));
-				} else {
-					const er = await r.json().catch(() => ({ error: 'Failed' }));
-					alert(er.error || 'Failed to update');
-				}
-			} catch (e: any) { alert(e.message || 'Error'); }
-		};
-
-		const renderList = (rows: ThreadRow[], own: boolean) => (
+	const renderList = (rows: ThreadRow[], own: boolean) => (
 		<ul className="divide-y divide-gray-700">
 			{rows.map((t) => (
 				<li key={t.id} className="py-3 flex items-center justify-between">
 					<div>
 						<Link href={`/snippet/${t.id}`} className="text-blue-300 hover:text-blue-200 font-medium">{t.title}</Link>
 						<div className="text-xs text-gray-400">{t.category_name} • Replies {Math.max(0, t.post_count - 1)}</div>
-						<div className="mt-2 w-64"><Chart value={Math.min(100, (t.post_count - 1) * 5)} /></div>
+						<div className="mt-2 w-64"><Sparkline threadId={t.id} /></div>
 					</div>
-						<div className="w-56 grid grid-cols-3 gap-2 text-right">
+					<div className="w-56 grid grid-cols-3 gap-2 text-right">
 						<StatCard label="Replies" value={String(Math.max(0, t.post_count - 1))} />
-						<StatCard label="Popularity" value={`${Math.min(100, (t.post_count - 1) * 5)}%`} />
-							{own && <StatCard label="Revenue" value={`$${(0).toFixed(2)}`} />}
+						<StatCard label="Likes" value={String(Math.max(0, Number((t as any).first_post_likes || 0)))} />
+						{own && <StatCard label="Revenue" value={`$${(0).toFixed(2)}`} />}
 					</div>
-						{own && (
-							<div className="ml-4 flex items-center gap-2">
-								<button onClick={() => handleEdit(t)} className="px-2 py-1 rounded bg-gray-700/60 text-gray-200 text-xs hover:bg-gray-700">Edit</button>
-								<button onClick={() => handleDelete(t.id)} className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-500">Delete</button>
-							</div>
-						)}
 				</li>
 			))}
 			{rows.length === 0 && (
@@ -145,12 +131,12 @@ export default function MySnippetsPage() {
 						<button onClick={() => setTab('liked')} className={`px-3 py-1.5 rounded-md ${tab==='liked'?'bg-blue-600 text-white':'bg-gray-700/60 text-gray-200'}`}>Liked</button>
 					</div>
 				</div>
-						{loading ? (
+				{loading ? (
 					<div className="text-gray-300">Loading…</div>
 				) : tab === 'created' ? (
-							renderList(created, true)
+					renderList(created, true)
 				) : (
-							renderList(liked, false)
+					renderList(liked, false)
 				)}
 			</div>
 		</main>

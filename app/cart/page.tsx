@@ -1,4 +1,5 @@
 import { headers, cookies } from "next/headers";
+import RemoveFromCartButton from "@/components/RemoveFromCartButton";
 
 async function getCart() {
   // On the server, fetch needs an absolute URL; forward cookies for session
@@ -42,15 +43,7 @@ export default async function CartPage() {
                       {it.price_label ?? `$${(Number(it.price_cents || 0)/100).toFixed(2)}`}
                     </div>
                     {/* Remove from cart */}
-                    <form action={`/api/v1/cart?threadId=${it.thread_id}`} method="post" onSubmit={(e) => {
-                      // Use fetch to DELETE for better UX; server action fallback is POST
-                      e.preventDefault();
-                      fetch(`/api/v1/cart?threadId=${it.thread_id}`, { method: 'DELETE' })
-                        .then(() => window.location.reload())
-                        .catch(() => window.location.reload());
-                    }}>
-                      <button type="submit" className="px-2 py-1 rounded bg-red-600 hover:bg-red-500 text-white text-xs">Remove</button>
-                    </form>
+                    <RemoveFromCartButton threadId={Number(it.thread_id)} />
                   </div>
                 </li>
               ))}

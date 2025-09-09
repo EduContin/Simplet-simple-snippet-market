@@ -18,7 +18,7 @@
     "setup-admin": "tsx -r dotenv/config infra/scripts/setupAdmin.ts",
   "maintenance:remove-demo-snippets": "tsx -r dotenv/config infra/scripts/removeDemoSnippets.ts",
     "migration:create": "node-pg-migrate -m infra/migrations create",
-  "migration:up": "node-pg-migrate -m infra/migrations up --envPath .env.development --ignore-pattern '172530000000[1-3]_.*|173000000100[1-3]_.*'",
+  "migration:up": "node-pg-migrate -m infra/migrations up --envPath .env.development --ignore-pattern '172530000000[1-3]_.*|173000000100[1-3]_.*|1730000005001_projects_bootstrap.js'",
     "wait-for-postgres": "ts-node infra/scripts/wait-for-postgres.ts"
   },
   "dependencies": {
