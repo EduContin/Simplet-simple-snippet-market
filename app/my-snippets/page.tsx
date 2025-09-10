@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+// (query param handled via window.location)
 
 type ThreadRow = {
 	id: number;
@@ -14,9 +15,12 @@ type ThreadRow = {
 };
 
 export default function MySnippetsPage() {
-	const [tab, setTab] = useState<'created' | 'liked'>('created');
+const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : undefined;
+const initialTab = (params?.get('tab') as any) || 'created';
+const [tab, setTab] = useState<'created' | 'liked' | 'owned'>(['created','liked','owned'].includes(initialTab)?initialTab:'created');
 	const [created, setCreated] = useState<ThreadRow[]>([]);
 	const [liked, setLiked] = useState<ThreadRow[]>([]);
+	const [owned, setOwned] = useState<ThreadRow[]>([]);
 	const [loading, setLoading] = useState(false);
 
 	const refresh = async () => {
@@ -30,8 +34,10 @@ export default function MySnippetsPage() {
 				if (r1.ok) setCreated(await r1.json());
 				const r2 = await fetch(`/api/v1/threads?likedBy=me&page=1&pageSize=100`, { cache: 'no-store' });
 				if (r2.ok) setLiked(await r2.json());
+				const r3 = await fetch(`/api/v1/threads?ownedBy=me&page=1&pageSize=100`, { cache: 'no-store' });
+				if (r3.ok) setOwned(await r3.json());
 			}
-		} catch {}
+		} catch (e) { /* noop */ }
 		setLoading(false);
 	};
 
@@ -93,13 +99,13 @@ export default function MySnippetsPage() {
 	};
 
 	const StatCard = ({ label, value }: { label: string; value: string }) => (
-		<div className="rounded-md border border-gray-700 p-3 bg-gray-900/40">
+		<div className="rounded-md border border-gray-700 px-3 py-2 bg-gray-900/40">
 			<div className="text-xs text-gray-400">{label}</div>
-			<div className="text-lg text-gray-100 font-semibold">{value}</div>
+			<div className="text-lg text-gray-100 font-semibold whitespace-nowrap">{value}</div>
 		</div>
 	);
 
-	const renderList = (rows: ThreadRow[], own: boolean) => (
+	const renderList = (rows: ThreadRow[], own: boolean, ownedList: boolean) => (
 		<ul className="divide-y divide-gray-700">
 			{rows.map((t) => (
 				<li key={t.id} className="py-3 flex items-center justify-between">
@@ -108,10 +114,15 @@ export default function MySnippetsPage() {
 						<div className="text-xs text-gray-400">{t.category_name} • Replies {Math.max(0, t.post_count - 1)}</div>
 						<div className="mt-2 w-64"><Sparkline threadId={t.id} /></div>
 					</div>
-					<div className="w-56 grid grid-cols-3 gap-2 text-right">
-						<StatCard label="Replies" value={String(Math.max(0, t.post_count - 1))} />
-						<StatCard label="Likes" value={String(Math.max(0, Number((t as any).first_post_likes || 0)))} />
-						{own && <StatCard label="Revenue" value={`$${(0).toFixed(2)}`} />}
+					<div className="flex items-center gap-3">
+						<div className="grid grid-flow-col auto-cols-max gap-2 text-right items-end justify-end">
+							<StatCard label="Replies" value={String(Math.max(0, t.post_count - 1))} />
+							<StatCard label="Likes" value={String(Math.max(0, Number((t as any).first_post_likes || 0)))} />
+							{own && <StatCard label="Revenue" value={`$${(((t as any).revenue_cents||0)/100).toFixed(2)}`} />}
+						</div>
+						{ownedList && (
+							<a href={`/api/v1/snippets/${t.id}/download`} className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium">Download</a>
+						)}
 					</div>
 				</li>
 			))}
@@ -127,16 +138,19 @@ export default function MySnippetsPage() {
 				<div className="flex items-center justify-between mb-4">
 					<h1 className="text-2xl font-bold text-gray-100">My Snippets</h1>
 					<div className="flex gap-2">
-						<button onClick={() => setTab('created')} className={`px-3 py-1.5 rounded-md ${tab==='created'?'bg-blue-600 text-white':'bg-gray-700/60 text-gray-200'}`}>Created</button>
-						<button onClick={() => setTab('liked')} className={`px-3 py-1.5 rounded-md ${tab==='liked'?'bg-blue-600 text-white':'bg-gray-700/60 text-gray-200'}`}>Liked</button>
+						<button onClick={() => {setTab('created'); history.replaceState(null,'',`?tab=created`);}} className={`px-3 py-1.5 rounded-md ${tab==='created'?'bg-blue-600 text-white':'bg-gray-700/60 text-gray-200'}`}>Created</button>
+						<button onClick={() => {setTab('liked'); history.replaceState(null,'',`?tab=liked`);}} className={`px-3 py-1.5 rounded-md ${tab==='liked'?'bg-blue-600 text-white':'bg-gray-700/60 text-gray-200'}`}>Liked</button>
+						<button onClick={() => {setTab('owned'); history.replaceState(null,'',`?tab=owned`);}} className={`px-3 py-1.5 rounded-md ${tab==='owned'?'bg-blue-600 text-white':'bg-gray-700/60 text-gray-200'}`}>Owned</button>
 					</div>
 				</div>
 				{loading ? (
 					<div className="text-gray-300">Loading…</div>
 				) : tab === 'created' ? (
-					renderList(created, true)
+					renderList(created, true, false)
+				) : tab === 'liked' ? (
+					renderList(liked, false, false)
 				) : (
-					renderList(liked, false)
+					renderList(owned, false, true)
 				)}
 			</div>
 		</main>

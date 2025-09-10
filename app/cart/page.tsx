@@ -53,7 +53,7 @@ export default async function CartPage() {
               <div className="text-gray-100 text-lg font-bold tabular-nums">${total}</div>
             </div>
             <div className="text-right">
-              <button className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white">Checkout</button>
+              <a href="/checkout" className="inline-block px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white">Checkout</a>
             </div>
           </div>
         )}

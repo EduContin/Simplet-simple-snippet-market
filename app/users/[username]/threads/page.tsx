@@ -12,6 +12,7 @@ interface Thread {
   post_count: number;
   last_post_at: string;
   first_post_likes: number;
+  announcements?: boolean;
 }
 
 const UserThreads: React.FC = () => {
@@ -62,7 +63,7 @@ const UserThreads: React.FC = () => {
       <h1 className="text-3xl font-bold mb-6 text-gray-100">
         {userUsername}&apos;s Threads
       </h1>
-      <ThreadList threads={threads} />
+  <ThreadList threads={threads.map(t => ({...t, announcements: !!t.announcements}))} />
       <div className="mt-6 flex justify-center">
         {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
           <button

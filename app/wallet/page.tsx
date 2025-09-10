@@ -13,6 +13,7 @@ export default function WalletPage() {
   const [sending, setSending] = useState(false);
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState("");
+  const [txs, setTxs] = useState<any[]>([]);
 
   // New card form (expects a PSP token, not raw card data)
   const [cardToken, setCardToken] = useState("");
@@ -42,6 +43,15 @@ export default function WalletPage() {
   useEffect(() => {
     fetchBalance();
     fetchMethods();
+    (async () => {
+      try {
+        const r = await fetch('/api/v1/wallet/transactions?limit=50', { cache: 'no-store' });
+        if (r.ok) {
+          const js = await r.json();
+          setTxs(js.items || []);
+        }
+      } catch {}
+    })();
   }, [userId]);
 
   const handleAttach = async () => {
@@ -186,7 +196,34 @@ export default function WalletPage() {
             </div>
           </div>
         )}
+        <div className="mt-6">
+          <h2 className="text-lg font-semibold text-gray-100 mb-2">Transactions</h2>
+          <div className="rounded border border-gray-700 bg-gray-900/40">
+            <div className="grid grid-cols-6 text-xs text-gray-400 border-b border-gray-700/60 px-3 py-2">
+              <div>Date</div>
+              <div>Type</div>
+              <div>Status</div>
+              <div>From</div>
+              <div>To</div>
+              <div className="text-right">Amount</div>
+            </div>
+            {txs.length === 0 && <div className="px-3 py-3 text-sm text-gray-400">No transactions yet.</div>}
+            {txs.map((t) => (
+              <div key={t.id} className="grid grid-cols-6 items-center px-3 py-2 border-b border-gray-800/60 last:border-b-0 text-sm">
+                <div className="text-gray-300">{new Date(t.created_at).toLocaleString()}</div>
+                <div className="text-gray-300 capitalize">{t.type}</div>
+                <div className={`text-xs font-medium ${t.status==='confirmed'?'text-emerald-300':'text-amber-300'}`}>{t.status}</div>
+                <div className="text-gray-300">{t.from_username || (t.from_user_id ? `#${t.from_user_id}` : '—')}</div>
+                <div className="text-gray-300">{t.to_username || (t.to_user_id ? `#${t.to_user_id}` : '—')}</div>
+                <div className={`text-right font-semibold ${t.to_user_id===Number(userId)?'text-emerald-300':'text-red-300'}`}>
+                  {t.currency || 'BRL'} {(Number(t.amount_cents||0)/100).toFixed(2)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </main>
   );
 }
+

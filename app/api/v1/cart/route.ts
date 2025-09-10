@@ -42,24 +42,26 @@ async function getThreadMeta(threadId: number): Promise<{ price_cents: number; p
   return { price_cents: cents, price_label, license };
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   const session: any = await getServerSession(authOptions as any);
   const userId = session?.user?.id;
   if (!userId) return NextResponse.json({ items: [], total_cents: 0 });
 
   try {
     const itemsRes = await database.query({
-      text: `SELECT ci.thread_id, ci.price_cents, t.title
+      text: `SELECT ci.thread_id, ci.price_cents, t.title,
+                    EXISTS (SELECT 1 FROM snippet_purchases sp WHERE sp.thread_id = ci.thread_id AND sp.buyer_user_id = ci.user_id) AS already_owned
              FROM cart_items ci
              JOIN threads t ON t.id = ci.thread_id
              WHERE ci.user_id = $1
              ORDER BY ci.created_at DESC`,
       values: [userId],
     });
-    const items = [] as Array<{ thread_id: number; title: string; price_cents: number; price_label: string; license: string|null }>;
+  const items = [] as Array<{ thread_id: number; title: string; price_cents: number; price_label: string; license: string|null; already_owned: boolean }>;
     for (const r of itemsRes.rows) {
       const thread_id = Number(r.thread_id);
-      const title = r.title as string;
+  const title = r.title as string;
+  const already_owned = !!r.already_owned;
       let price_cents = Number(r.price_cents || 0);
       // Re-derive label and license from current first post content for display richness
       const meta = await getThreadMeta(thread_id);
@@ -67,9 +69,10 @@ export async function GET(request: NextRequest) {
         // Sync stored cents with parsed meta to keep totals accurate if snippet meta changed
         price_cents = meta.price_cents;
       }
-      items.push({ thread_id, title, price_cents, price_label: meta.price_label, license: meta.license });
+      // Skip items already owned from total but still show them flagged so user can remove quickly
+      items.push({ thread_id, title, price_cents, price_label: meta.price_label, license: meta.license, already_owned });
     }
-    const total_cents = items.reduce((sum: number, it: any) => sum + it.price_cents, 0);
+    const total_cents = items.reduce((sum: number, it: any) => it.already_owned ? sum : sum + it.price_cents, 0);
     return NextResponse.json({ items, total_cents });
   } catch (e) {
     console.error('Cart GET error', e);

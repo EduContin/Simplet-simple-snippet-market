@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get("userId");
   const announcementsParam = searchParams.get("announcements"); 
   const likedBy = searchParams.get("likedBy");
+  const ownedBy = searchParams.get("ownedBy");
 
   const offset = (page - 1) * pageSize;
 
@@ -25,7 +26,8 @@ export async function GET(request: NextRequest) {
         COUNT(p.id) AS post_count,
         MAX(p.created_at) AS last_post_at,
         (SELECT id FROM posts WHERE thread_id = t.id ORDER BY created_at ASC LIMIT 1) AS first_post_id,
-        COALESCE((SELECT likes_count FROM posts WHERE thread_id = t.id ORDER BY created_at ASC LIMIT 1), 0) AS first_post_likes
+  COALESCE((SELECT likes_count FROM posts WHERE thread_id = t.id ORDER BY created_at ASC LIMIT 1), 0) AS first_post_likes,
+  COALESCE((SELECT SUM(price_cents) FROM snippet_purchases sp WHERE sp.thread_id = t.id),0) AS revenue_cents
       FROM threads t
       JOIN users u ON t.user_id = u.id
       JOIN categories c ON t.category_id = c.id
@@ -65,6 +67,18 @@ export async function GET(request: NextRequest) {
       queryParams.push(meId);
     }
 
+    if (ownedBy && ownedBy.toLowerCase() === 'me') {
+      const session: any = await getServerSession(authOptions as any);
+      const meId = session?.user?.id;
+      if (!meId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM snippet_purchases sp
+        WHERE sp.buyer_user_id = $${queryParams.length + 1}
+          AND sp.thread_id = t.id
+      )`);
+      queryParams.push(meId);
+    }
+
     if (announcementsParam && announcementsParam.toLowerCase() === "true") {
       whereConditions.push(`t.announcements = true`);
     }
@@ -74,7 +88,7 @@ export async function GET(request: NextRequest) {
     }
 
     query += `
-      GROUP BY t.id, u.username, c.name
+  GROUP BY t.id, u.username, c.name
       ORDER BY t.created_at DESC
       LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
     `;
