@@ -29,21 +29,17 @@ export default function LoginForm() {
     }
 
     try {
-      const response = (await signIn("credentials", {
+      const res = await signIn("credentials", {
         username: username.trim(),
         password: password.trim(),
         redirect: false,
-      })) as unknown as {
-        ok: boolean;
-        json: () => Promise<{ message: string }>;
-      };
+      });
 
-      if (response.ok) {
+      if (res?.ok) {
         setIsSuccess(true);
         router.push("/");
       } else {
-        const data = await response.json();
-        setError(data.message || "Login failed");
+        setError(res?.error || "Invalid username or password");
       }
     } catch (err) {
       console.error("Login error:", err);

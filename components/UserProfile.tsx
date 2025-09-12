@@ -20,6 +20,7 @@ export default function UserProfile({
   // Remove explicit Threads and Vouches from UI; keep counts for internal metrics only
   const [likesOnSnippets, setLikesOnSnippets] = useState(0);
   const [earningsCents, setEarningsCents] = useState(0);
+  const [verifiedStamps, setVerifiedStamps] = useState(0);
   const isOwner = !!currentUser && currentUser.toLowerCase() === String(user.username).toLowerCase();
   const [uploading, setUploading] = useState(false);
 
@@ -142,6 +143,7 @@ export default function UserProfile({
           const d = await m.json();
           setLikesOnSnippets(d.likes_on_snippets || 0);
           setEarningsCents(d.earnings_cents || 0);
+          setVerifiedStamps(d.verified_stamps || 0);
         }
       } catch (e) {
         console.error("metrics fetch error", e);
@@ -325,6 +327,7 @@ export default function UserProfile({
                 {[
                   { label: "Posts", value: user.posts_count },
                   { label: "Likes on Snippets", value: likesOnSnippets },
+                  { label: "Verified Stamps", value: verifiedStamps },
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">
                     <p className="font-bold text-xm">{stat.value}</p>

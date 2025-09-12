@@ -11,6 +11,8 @@ type Thread = {
   post_count: number;
   last_post_at: string;
   announcements: boolean;
+  file_count?: number;
+  files_preview?: Array<{ id: number; filename: string; language: string | null; is_entry: boolean; content: string }>;
 };
 
 async function fetchThreads(page = 1, pageSize = 24): Promise<Thread[]> {
@@ -64,7 +66,7 @@ export default function HomeClient() {
   const [query, setQuery] = useState("");
   const [language, setLanguage] = useState("All");
   const [problem, setProblem] = useState("All");
-  const [previews, setPreviews] = useState<Record<number, { contentSnippet: string; title?: string }>>({});
+  const [previews, setPreviews] = useState<Record<number, { contentSnippet: string; title?: string; language?: string }>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -82,13 +84,32 @@ export default function HomeClient() {
 
         if (data && data.length > 0) {
           setThreads(data);
-          const ids = data.map((t) => t.id);
-          const results = await Promise.all(
-            ids.map(async (id) => ({ id, content: await fetchFirstPost(id) }))
-          );
-          if (!mounted) return;
-          const map: Record<number, { contentSnippet: string; title?: string }> = {};
-          results.forEach(({ id, content }) => {
+          // Build previews: prefer entry file content if present; fallback to first post content
+          const map: Record<number, { contentSnippet: string; title?: string; language?: string }> = {};
+          for (const t of data as Thread[]) {
+            const files = Array.isArray(t.files_preview) ? t.files_preview : [];
+            const entry = files.find((f) => f.is_entry) || files[0];
+            if (entry && entry.content) {
+              const snippet = (entry.content || "").slice(0, 280);
+              let title: string | undefined;
+              const firstLine = snippet.split("\n").find((l) => l.trim().length > 0) || "";
+              if (/^\s*(\/\/|#|--|\/\*|\*)/.test(firstLine)) {
+                title = firstLine.replace(/^\s*(\/\/|#|--|\/\*|\*)\s*/, "").slice(0, 60);
+              } else if (/function\s+([a-zA-Z0-9_]+)/.test(firstLine)) {
+                const m = firstLine.match(/function\s+([a-zA-Z0-9_]+)/);
+                title = m ? `${m[1]}()` : undefined;
+              } else if (/class\s+([a-zA-Z0-9_]+)/.test(firstLine)) {
+                const m = firstLine.match(/class\s+([a-zA-Z0-9_]+)/);
+                title = m ? `${m[1]} class` : undefined;
+              } else if (/def\s+([a-zA-Z0-9_]+)/.test(firstLine)) {
+                const m = firstLine.match(/def\s+([a-zA-Z0-9_]+)/);
+                title = m ? `${m[1]}()` : undefined;
+              }
+              map[t.id] = { contentSnippet: snippet + ((entry.content || "").length > 280 ? "..." : ""), title, language: entry.language || undefined };
+              continue;
+            }
+            // Fallback: fetch first post's content
+            const content = await fetchFirstPost(t.id);
             if (content) {
               const plain = content
                 .replace(/\[\/?(b|i|u|s|quote|code|img|url|hidden|spoiler|align|size|color)(=[^\]]+)?\]/g, "")
@@ -108,9 +129,10 @@ export default function HomeClient() {
                 const m = firstLine.match(/def\s+([a-zA-Z0-9_]+)/);
                 title = m ? `${m[1]}()` : undefined;
               }
-              map[id] = { contentSnippet: plain + (content.length > 280 ? "..." : ""), title };
+              map[t.id] = { contentSnippet: plain + (content.length > 280 ? "..." : ""), title };
             }
-          });
+          }
+          if (!mounted) return;
           setPreviews(map);
         } else {
           setThreads([]);
@@ -187,7 +209,7 @@ export default function HomeClient() {
           threads={filtered}
           view="cards"
           previews={previews}
-          linkResolver={(t) => `/snippet/${t.id}`}
+          linkResolver={(t) => `/thread/${t.id}`}
           onDismiss={(id) => {
             console.debug("Dismissed", id);
           }}

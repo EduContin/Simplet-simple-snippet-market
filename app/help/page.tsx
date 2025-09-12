@@ -118,7 +118,7 @@ const HelpPage: React.FC = () => {
           Welcome to Simplet
         </h1>
 
-        <nav className="mb-6 p-6 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-lg github-shadow">
+  <nav className="mb-6 p-6 bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-lg github-shadow">
           <h2 className="text-2xl font-semibold mb-3 text-gray-100">
             Table of Contents
           </h2>
@@ -158,6 +158,14 @@ const HelpPage: React.FC = () => {
                 className="text-blue-400 hover:underline"
               >
                 Communication Guidelines
+              </a>
+            </li>
+            <li>
+              <a
+                href="#verification-badge"
+                className="text-blue-400 hover:underline"
+              >
+                Verification Badge
               </a>
             </li>
           </ul>
@@ -261,6 +269,17 @@ const HelpPage: React.FC = () => {
   </li>
 </ol>
 
+        </section>
+
+        <section id="verification-badge" className="mb-6 bg-gray-800/90 backdrop-blur-sm p-6 border border-gray-700 rounded-lg">
+          <h2 className="text-2xl font-semibold mb-3 text-gray-100">Verification Badge</h2>
+          <p className="text-gray-300 mb-3">Snippets that follow the platform's Code Standards may receive a verification badge from Admins. This badge signals quality and increases discoverability.</p>
+          <ul className="list-disc list-inside text-gray-300 space-y-1">
+            <li>Admin-only: only platform Admins can grant or revoke the badge.</li>
+            <li>Criteria: documentation completeness, runnable example, security basics, clear licensing.</li>
+            <li>Revocation: if the snippet stops complying, the badge can be removed.</li>
+          </ul>
+          <p className="text-gray-400 text-sm mt-3">See the full policy: <a href="/legal/code-standards" className="text-blue-400 hover:underline">Code Standards & Verification Policy</a>.</p>
         </section>
 
         <section className="mb-6 bg-gray-800/90 backdrop-blur-sm p-6 border border-gray-700 rounded-lg">

@@ -8,6 +8,7 @@ export default function ProjectsLegalPage() {
         <p className="text-gray-300 text-sm mb-2">This section provides baseline legal templates to protect both companies and developers.</p>
         <ul className="list-disc pl-5 text-blue-300 text-sm">
           <li><Link href="/projects/terms" className="hover:underline">Independent Contractor Terms</Link></li>
+          <li><Link href="/legal/code-standards" className="hover:underline">Code Standards & Verification Policy</Link></li>
         </ul>
         <p className="text-gray-400 text-xs mt-4">These are community templates and not legal advice. For critical engagements, consult a qualified attorney.</p>
       </div>

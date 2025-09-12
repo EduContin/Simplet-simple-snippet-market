@@ -43,6 +43,7 @@ export default async function ThreadPage({
 
     return (
       <main className="container mx-auto px-4 py-8">
+        {/* Title + Verified badge (rendered by Thread component too) */}
         <Thread thread={thread} posts={posts} />
       </main>
     );

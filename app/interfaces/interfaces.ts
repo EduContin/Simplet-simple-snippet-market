@@ -39,6 +39,7 @@ export interface ThreadPropThread {
         username: string;
         category_name: string;
         created_at: string;
+  is_verified?: boolean;
     };
     posts: PostThread[];
 }

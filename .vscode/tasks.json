@@ -1,0 +1,11 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run migrations (denormalized revenue/earnings)",
+			"type": "shell",
+			"command": "npm run migration:up",
+			"args": []
+		}
+	]
+}

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   try {
     let query = `
-      SELECT
+    SELECT
         t.*,
         u.username,
         c.name AS category_name,
@@ -27,7 +27,17 @@ export async function GET(request: NextRequest) {
         MAX(p.created_at) AS last_post_at,
         (SELECT id FROM posts WHERE thread_id = t.id ORDER BY created_at ASC LIMIT 1) AS first_post_id,
   COALESCE((SELECT likes_count FROM posts WHERE thread_id = t.id ORDER BY created_at ASC LIMIT 1), 0) AS first_post_likes,
-  COALESCE((SELECT SUM(price_cents) FROM snippet_purchases sp WHERE sp.thread_id = t.id),0) AS revenue_cents
+  COALESCE(t.revenue_cents, 0) AS revenue_cents,
+  COALESCE((SELECT COUNT(1) FROM snippet_files sf WHERE sf.thread_id = t.id), 0) AS file_count
+      , COALESCE((
+        SELECT json_agg(sf2)
+        FROM (
+          SELECT id, filename, language, is_entry, LEFT(content, 800) AS content
+          FROM snippet_files sf WHERE sf.thread_id = t.id
+          ORDER BY is_entry DESC, filename ASC
+          LIMIT 5
+        ) sf2
+      ), '[]'::json) AS files_preview
       FROM threads t
       JOIN users u ON t.user_id = u.id
       JOIN categories c ON t.category_id = c.id
@@ -150,5 +160,38 @@ export async function POST(request: NextRequest) {
       { error: "Internal Server Error" },
       { status: 500 },
     );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  // Admin-only verify/unverify thread
+  const session: any = await getServerSession(authOptions as any);
+  const meId = session?.user?.id;
+  if (!meId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Ensure caller is Admin
+  const me = await database.query({ text: "SELECT user_group FROM users WHERE id = $1", values: [meId] });
+  const isAdmin = me.rows?.[0]?.user_group === "Admin";
+  if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { threadId, verify } = await request.json();
+  if (!Number.isFinite(Number(threadId))) return NextResponse.json({ error: "Invalid threadId" }, { status: 400 });
+
+  try {
+    const q = verify === true
+      ? {
+          text: `UPDATE threads SET is_verified = true, verified_by_user_id = $1, verified_at = NOW(), updated_at = NOW() WHERE id = $2 RETURNING id, is_verified, verified_at` ,
+          values: [meId, Number(threadId)],
+        }
+      : {
+          text: `UPDATE threads SET is_verified = false, verified_by_user_id = NULL, verified_at = NULL, updated_at = NOW() WHERE id = $1 RETURNING id, is_verified, verified_at`,
+          values: [Number(threadId)],
+        };
+    const res = await database.query(q);
+    if (res.rowCount === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(res.rows[0]);
+  } catch (e) {
+    console.error("PATCH /api/v1/threads verify failed", e);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

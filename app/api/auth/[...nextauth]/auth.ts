@@ -29,7 +29,7 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.username || !credentials?.password) return null;
 
         const result = await database.query({
-          text: `SELECT * FROM users WHERE username = $1`,
+          text: `SELECT * FROM users WHERE LOWER(username) = LOWER($1)`,
           values: [credentials.username],
         });
         const user = result.rows[0];

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Prism } from "@/lib/prism";
@@ -51,6 +51,12 @@ export default function NewSnippetPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Multi-file state
+  type NewFile = { id: number; filename: string; language?: string; is_entry?: boolean; content: string };
+  const [useMultiFiles, setUseMultiFiles] = useState(false);
+  const [files, setFiles] = useState<NewFile[]>([{ id: 1, filename: "snippet.js", language: "jsx", is_entry: true, content: "" }]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const maxChars = 12000;
 
   // Precompute highlighted HTML for overlay/preview
@@ -76,6 +82,79 @@ export default function NewSnippetPage() {
     const ext = languageOptions.find((o) => o.id === v)?.ext || "txt";
     if (filename.includes(".")) setFilename(filename.replace(/\.[^.]+$/, `.${ext}`));
     else setFilename(`${filename}.${ext}`);
+  };
+
+  // Helpers for multi-files
+  const addFile = () => {
+    const nextId = (files.at(-1)?.id ?? 1) + 1;
+    setFiles((arr) => [...arr, { id: nextId, filename: `file${nextId}.txt`, content: "" }]);
+  };
+  const updateFile = (id: number, patch: Partial<NewFile>) => {
+    setFiles((arr) => arr.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+  };
+  const removeFile = (id: number) => {
+    setFiles((arr) => arr.filter((f) => f.id !== id));
+  };
+
+  const guessLangFromName = (name: string): string | undefined => {
+    const ext = (name.split(".").pop() || "").toLowerCase();
+    const map: Record<string, string> = {
+      js: "jsx", jsx: "jsx", ts: "tsx", tsx: "tsx",
+      py: "python", go: "go", rs: "rust", rb: "ruby", php: "php",
+      java: "java", cpp: "cpp", cc: "cpp", cxx: "cpp", c: "clike",
+      css: "css", html: "markup", htm: "markup", json: "json", sh: "bash", bash: "bash", sql: "sql", yml: "yaml", yaml: "yaml",
+    };
+    return map[ext];
+  };
+
+  const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const highlightFor = (content: string, lang?: string, filename?: string) => {
+    const chosen = lang || guessLangFromName(filename || "") || "clike";
+    try {
+      const grammar = (Prism as any).languages[chosen];
+      if (grammar) return Prism.highlight(content || "", grammar, chosen);
+    } catch {}
+    return escapeHtml(content || "");
+  };
+
+  // Handle upload of multiple files; auto-parse content and infer language
+  const onUploadFiles = async (ev: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
+    const list = ev.target.files;
+    if (!list || list.length === 0) return;
+    try {
+      const newOnes: NewFile[] = [];
+      for (let i = 0; i < list.length; i++) {
+        const file = list[i];
+        // Only text-like types; skip binaries
+        if (file.type && !/^text\//.test(file.type) && !/\+xml$/.test(file.type)) continue;
+        const text = await file.text();
+        const lang = guessLangFromName(file.name);
+        newOnes.push({ id: Date.now() + i, filename: file.name, language: lang, content: text });
+      }
+      if (newOnes.length === 0) {
+        setUploadError("No text files detected. Please upload code/text files.");
+        return;
+      }
+      setUseMultiFiles(true);
+      setFiles((arr) => {
+        const combined = arr.length === 1 && !arr[0].content ? [] : arr;
+        const result = [...combined, ...newOnes];
+        // ensure a single entry flag
+        if (!result.some((f) => f.is_entry)) {
+          const idx = result.findIndex((f) => /index\.(html|js|ts|tsx|jsx)$/i.test(f.filename))
+            ?? 0;
+          const pick = idx >= 0 ? idx : 0;
+          result.forEach((f, i) => (f.is_entry = i === pick));
+        }
+        return result;
+      });
+    } catch (e: any) {
+      setUploadError(e?.message || "Failed to read files");
+    } finally {
+      // reset the input so the same file selection can be chosen again
+      ev.target.value = "";
+    }
   };
 
   // Enforce MIT license as free (disable pricing)
@@ -126,9 +205,18 @@ export default function NewSnippetPage() {
 
   const submit = async () => {
     setSubmitError(null);
-    if (!title.trim() || !code.trim()) {
-      setSubmitError("Title and code are required.");
-      return;
+    // Single vs Multi validation
+    if (!useMultiFiles) {
+      if (!title.trim() || !code.trim()) {
+        setSubmitError("Title and code are required.");
+        return;
+      }
+    } else {
+      const nonEmpty = files.filter((f) => (f.content || "").trim().length > 0);
+      if (nonEmpty.length === 0) {
+        setSubmitError("Please add at least one file with content.");
+        return;
+      }
     }
     if (!session?.user?.id) {
       setSubmitError("You must be logged in to publish.");
@@ -136,23 +224,41 @@ export default function NewSnippetPage() {
     }
     setIsSubmitting(true);
     try {
-  const priceLine = priceType === "discussion" ? "Up for discussion" : (price ? `$${price}` : "—");
-  const meta = `[b]Tags:[/b] ${tech.length ? tech.join(', ') : '—'}\n[b]License:[/b] ${license}\n[b]Price:[/b] ${priceLine}\n\n${description ? description : ''}`;
-      const bb = `${meta}\n[code]\n${code}\n[/code]`;
-      const categoryId = 1; // fallback: map language/tech to categories later
-      const langLabel = languageOptions.find((o) => o.id === language)?.label || language;
-      const titleWithLang = `${title} • ${langLabel}`;
-      const res = await fetch("/api/v1/threads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ title: titleWithLang, content: bb, categoryId, userId: session.user.id, announcements: false }),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `Publish failed (${res.status})`);
+      const categoryId = 1;
+      if (!useMultiFiles) {
+        const priceLine = priceType === "discussion" ? "Up for discussion" : (price ? `$${price}` : "—");
+        const meta = `[b]Tags:[/b] ${tech.length ? tech.join(', ') : '—'}\n[b]License:[/b] ${license}\n[b]Price:[/b] ${priceLine}\n\n${description ? description : ''}`;
+        const bb = `${meta}\n[code]\n${code}\n[/code]`;
+        const langLabel = languageOptions.find((o) => o.id === language)?.label || language;
+        const titleWithLang = `${title} • ${langLabel}`;
+        const res = await fetch("/api/v1/threads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: titleWithLang, content: bb, categoryId, userId: session.user.id, announcements: false }),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || `Publish failed (${res.status})`);
+        }
+        const { threadId } = await res.json();
+        router.push(`/snippet/${threadId}`);
+      } else {
+        // Multi-file path: derive a title from entry or first file
+        const entry = (files.find((f) => f.is_entry) || files[0]);
+        const derivedTitle = (title.trim() || entry?.filename || "Snippet");
+        const payloadFiles = files.map(({ filename, language, is_entry, content }) => ({ filename, language, is_entry: !!is_entry, content }));
+        const res = await fetch("/api/v1/threads/multi", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: derivedTitle, categoryId, files: payloadFiles }),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || `Publish failed (${res.status})`);
+        }
+        const { threadId } = await res.json();
+        router.push(`/thread/${derivedTitle.replace(/\s+/g, '-').toLowerCase()}-${threadId}`);
       }
-      const { threadId } = await res.json();
-      router.push(`/snippet/${threadId}`);
     } catch (e: any) {
       setSubmitError(e?.message || "Failed to publish the snippet.");
     } finally {
@@ -271,6 +377,20 @@ export default function NewSnippetPage() {
           />
         </div>
 
+        {/* Toggle single vs multi */}
+        <div className="mb-3 flex items-center gap-3">
+          <label className="text-sm text-gray-300 inline-flex items-center gap-2">
+            <input type="checkbox" className="accent-blue-600" checked={useMultiFiles} onChange={(e) => setUseMultiFiles(e.target.checked)} />
+            Create with multiple files
+          </label>
+          {useMultiFiles && (
+            <label className="text-sm text-gray-300 inline-flex items-center gap-2">
+              <input type="file" multiple onChange={onUploadFiles} className="hidden" id="fileUploader" />
+              <span role="button" className="px-3 py-1.5 rounded-md bg-gray-700 hover:bg-gray-600">Upload files…</span>
+            </label>
+          )}
+        </div>
+
         {/* IDE-like editor */}
         <div className="rounded-md border border-gray-700 overflow-hidden snippet-ide-shadow">
           <div className="px-3 py-2 bg-gray-800 flex items-center gap-2">
@@ -284,7 +404,8 @@ export default function NewSnippetPage() {
               <button onClick={formatCode} type="button" className="px-3 py-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-100 text-sm">Format</button>
             </div>
           </div>
-          <div className="bg-gray-900/80 grid grid-cols-[48px_1fr]">
+          {!useMultiFiles && (
+            <div className="bg-gray-900/80 grid grid-cols-[48px_1fr]">
             <div className="select-none text-right pr-2 py-3 text-gray-500 text-xs bg-gray-900/80 border-r border-gray-800">
               {Array.from({ length: Math.max(1, code.split('\n').length) }).map((_, i) => (
                 <div key={i} className="leading-5">{i + 1}</div>
@@ -311,9 +432,11 @@ export default function NewSnippetPage() {
                 rows={16}
               />
             </div>
-          </div>
+            </div>
+          )}
         </div>
         {checkResult && <div className="mt-2 text-sm text-gray-300">{checkResult}</div>}
+        {uploadError && <div className="mt-2 text-sm text-red-400">{uploadError}</div>}
 
   {/* Preview removed per requirement. Comments live under the snippet view page. */}
 
@@ -323,6 +446,55 @@ export default function NewSnippetPage() {
           <button onClick={submit} disabled={isSubmitting} className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white">{isSubmitting ? 'Publishing…' : 'Publish'}</button>
           <button onClick={() => router.back()} className="px-4 py-2 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-100">Cancel</button>
         </div>
+
+        {useMultiFiles && (
+          <div className="mt-6 space-y-3">
+            {files.map((f) => (
+              <div key={f.id} className="rounded-md border border-gray-700 overflow-hidden">
+                <div className="px-3 py-2 bg-gray-800 flex items-center gap-2">
+                  <input value={f.filename} onChange={(e) => updateFile(f.id, { filename: e.target.value })} className="bg-gray-700/80 text-gray-100 text-xs px-2 py-1 rounded" />
+                  <select value={f.language || ''} onChange={(e) => updateFile(f.id, { language: e.target.value })} className="bg-gray-700/80 text-gray-100 text-xs px-2 py-1 rounded">
+                    <option value="">auto</option>
+                    {languageOptions.map((o) => (
+                      <option key={o.id} value={o.id}>{o.label}</option>
+                    ))}
+                  </select>
+                  <label className="text-xs text-gray-300 inline-flex items-center gap-1">
+                    <input type="radio" name="entry" checked={!!f.is_entry} onChange={() => setFiles((arr) => arr.map((x) => ({ ...x, is_entry: x.id === f.id })))} />
+                    entry
+                  </label>
+                  <button type="button" onClick={() => removeFile(f.id)} className="ml-auto text-xs text-red-400 hover:text-red-300">Remove</button>
+                </div>
+                <div className="bg-gray-900/80 grid grid-cols-[48px_1fr]">
+                  {/* Line numbers */}
+                  <div className="select-none text-right pr-2 py-3 text-gray-500 text-xs bg-gray-900/80 border-r border-gray-800">
+                    {Array.from({ length: Math.max(1, (f.content || '').split('\n').length) }).map((_, i) => (
+                      <div key={i} className="leading-5">{i + 1}</div>
+                    ))}
+                  </div>
+                  {/* Editor area with syntax highlight overlay */}
+                  <div className="relative">
+                    <pre aria-hidden className="pointer-events-none absolute inset-0 m-0 p-3 font-mono text-[13px] leading-5 text-gray-200 whitespace-pre-wrap break-words">
+                      <code className={`language-${f.language || guessLangFromName(f.filename || '') || 'clike'}`}
+                        dangerouslySetInnerHTML={{ __html: highlightFor(f.content, f.language, f.filename) }} />
+                    </pre>
+                    <textarea
+                      value={f.content}
+                      onChange={(e) => updateFile(f.id, { content: e.target.value })}
+                      rows={8}
+                      className="relative w-full bg-transparent text-transparent caret-white font-mono text-sm leading-5 outline-none resize-y p-3 min-h-[160px]"
+                      placeholder={`Paste code for ${f.filename}`}
+                      spellCheck={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div>
+              <button type="button" onClick={addFile} className="px-3 py-1 text-xs bg-gray-700 text-gray-100 rounded hover:bg-gray-600">+ Add file</button>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

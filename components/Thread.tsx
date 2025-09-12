@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { FaTrashAlt } from "react-icons/fa";
 import { Prism, mapCategoryToLanguage } from "@/lib/prism";
 import { ThreadPropThread, UserThread } from "@/app/interfaces/interfaces";
+type SnippetFile = { id: number; filename: string; language: string | null; is_entry: boolean; size: number };
 
 const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => {
   const { data: session } = useSession();
@@ -30,7 +31,11 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
   );
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
-  const[isPinned, setIsPinned] = useState(false);
+  const [isVerified, setIsVerified] = useState<boolean>(Boolean((thread as any).is_verified));
+  const [files, setFiles] = useState<SnippetFile[]>([]);
+  const [activeFileId, setActiveFileId] = useState<number | null>(null);
+  const [explorerOpen, setExplorerOpen] = useState<boolean>(true);
+  const [activeContent, setActiveContent] = useState<string | null>(null);
 
 
   const MAX_CHARACTERS = 5000; // Set the maximum character limit
@@ -41,6 +46,23 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
       router.push("/");
     }
   }, [thread, router]);
+
+  const toggleVerification = async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await fetch(`/api/v1/threads`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ threadId: thread.id, verify: !isVerified }),
+      });
+      if (!res.ok) throw new Error("verify failed");
+      const data = await res.json();
+      setIsVerified(Boolean(data.is_verified));
+    } catch (e) {
+      console.error(e);
+      alert("Failed to toggle verification");
+    }
+  };
 
   const handleDeletePost = async (postId: number, postUsername: string) => {
     // Owner-only delete
@@ -75,23 +97,51 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
   };
 
   useEffect(() => {
-  if (session?.user?.name) {
+    // Load snippet files (if any)
+    (async () => {
+      try {
+        const res = await fetch(`/api/v1/threads/${thread.id}/files`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const list: SnippetFile[] = await res.json();
+        setFiles(list);
+        const entry = list.find(f => f.is_entry) || list[0];
+        if (entry) setActiveFileId(entry.id);
+      } catch {}
+    })();
+  }, [thread.id]);
+
+  useEffect(() => {
+    // Fetch active file content
+    (async () => {
+      if (!activeFileId) return;
+      try {
+        const res = await fetch(`/api/v1/snippet-files/${activeFileId}`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const file = await res.json();
+        setActiveContent(file?.content ?? null);
+        // highlight after content loads
+        try { Prism.highlightAll(); } catch {}
+      } catch {}
+    })();
+  }, [activeFileId]);
+  useEffect(() => {
+    if (session?.user?.name) {
       fetch(`/api/v1/users/${session.user.name}`)
         .then((response) => response.json())
         .then((user) => {
-      setIsAdmin(user.user_group === "Admin");
-      setCurrentUsername(user.username);
+          setIsAdmin(user.user_group === "Admin");
+          setCurrentUsername(user.username);
         })
         .catch((error) => console.error("Error fetching user data:", error));
     }
-  }, [session]);
+  }, [session, setIsAdmin, setCurrentUsername]);
 
   const handleDeleteThread = async () => {
   // Owner-only delete for thread
   if (!(currentUsername && currentUsername === thread.username)) return;
 
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this entire thread?",
+      "Are you sure you want to remove this snippet?",
     );
     if (!confirmDelete) return;
 
@@ -104,15 +154,15 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
       });
 
       if (response.ok) {
-        alert("Thread deleted successfully");
+        alert("Snippet removed successfully");
         router.push("/"); // Redirect to home page or thread list
       } else {
-        console.error("Failed to delete thread");
-        alert("Failed to delete thread. Please try again.");
+        console.error("Failed to remove snippet");
+        alert("Failed to remove snippet. Please try again.");
       }
     } catch (error) {
-      console.error("Error deleting thread:", error);
-      alert("An error occurred while deleting the thread. Please try again.");
+      console.error("Error removing snippet:", error);
+      alert("An error occurred while removing the snippet. Please try again.");
     }
   };
 
@@ -278,15 +328,13 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
       if (session?.user?.id) {
         const postIds = initialPosts.map((post) => post.id).join(",");
         try {
-          const response = await fetch(
-            `/api/v1/likes/by-post?postIds=${postIds}`,
-          );
+      const response = await fetch(`/api/v1/likes?postIds=${postIds}`);
           if (response.ok) {
             const likedPosts = await response.json();
             setPosts((prevPosts) =>
               prevPosts.map((post) => ({
-                ...post,
-                is_liked_by_user: likedPosts[post.id] || false,
+        ...post,
+        is_liked_by_user: !!likedPosts?.[post.id]?.liked,
               })),
             );
           }
@@ -601,81 +649,7 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
     }
   };
 
-  const handlePinned = async() => {
-      if(session?.user?.id){
-        //If Thread is not pinned, clicking the button
-        //will send a POST to add the Thread to PINNED table
-        
-        //Else, the Thread is already pinned, clicking the button
-        //will send a DELETE to remove the Thread from PINNED table
-        if(!isPinned){
-          try{
-            const response = await fetch("/api/v1/pinned", {
-              method: "POST",
-              body : JSON.stringify({
-                user_id : session.user.id,
-                thread_id : thread.id
-              })
-            });
-
-            if (response.ok){
-              console.log("Thread Pinned Successfully!!!");
-              setIsPinned(true);
-            }
-          }
-          catch ( error ){
-            console.error("Failed to Pin Thread");
-          }
-        }
-        else{
-          try{
-            const response = await fetch("/api/v1/pinned", {
-              method: "DELETE",
-              body : JSON.stringify({
-                user_id : session.user.id,
-                thread_id : thread.id
-              })
-            });
-
-            if (response.ok){
-              console.log("Thread Unpinned Successfully!!!");
-              setIsPinned(false);
-            }
-          }
-          catch ( error ){
-            console.error("Failed to Unpin Thread");
-          }
-        }
-      }
-  };
-
-  useEffect(() =>{
-    const fetchPinned = async () => {
-      if(session?.user?.id){
-        try{
-          const user_id = session.user.id;
-          const thread_id = thread.id;
-          const response = await fetch(`/api/v1/pinned?userId=${user_id}&threadId=${thread_id}`);
-          if(response.ok){
-            const data = await response.json();
-            if (data.rows.length > 0){
-              setIsPinned(true);
-            }
-          }
-          //Not expected response
-          else{
-            console.error("Failed to fetch Pinned");
-          }
-        }
-        //Server side error
-        catch ( error ){
-          console.error("Error fetching from Pinned: ", error);
-        }
-      }
-    };
-
-    fetchPinned();
-  }, [session]);
+  // Pinned functionality removed from UI per request
 
   // Extract first [code]...[/code] block for IDE-like preview
   const extractFirstCodeBlock = (text: string): string | null => {
@@ -689,22 +663,13 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
       {thread && thread.title ? (
         <div className="bg-gray-800/90 backdrop-blur-sm rounded-lg p-6 mb-2">
           <div className="flex items-center w-full justify-between">
-            <h2 className="text-2xl font-bold">{thread.title}</h2>
-            <div className="flex flex-row align-right space-x-10">
-              <button onClick={handlePinned}
-              className="px-4 py-2 p-2 bg-blue-600 border-none
-              rounded-md cursor-pointer flex items-center space-x-3
-              hover:bg-blue-800
-              transition-all duration-800 ease-in-out
-              active:scale-105 transform"
-              >
-
-                
-                <img src="/push-pin.png" alt="Button Pin" className={`w-6 h-6 transition-transform
-                 duration-300 ease-in-out ${isPinned ? 'rotate-180' : 'rotate-0'}`}/>
-                <span>{!isPinned? "Pin to Favorites" : "Unpin from Favorites"}</span>
-                
-              </button>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold">{thread.title}</h2>
+              {isVerified && (
+                <span className="inline-flex items-center text-xs text-green-400 border border-green-500/50 rounded px-2 py-0.5">Verified</span>
+              )}
+            </div>
+      <div className="flex flex-row align-right space-x-3 sm:space-x-4">
             {currentUsername === thread.username && (
               <button
                 onClick={handleDeleteThread}
@@ -713,7 +678,16 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
                 transition-all duration-800 ease-in-out
                 active:scale-105 transform"
               >
-                Delete Thread
+        Remove Snippet
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                onClick={toggleVerification}
+                className={`px-4 py-2 rounded-md transition-all duration-200 active:scale-105 transform border ${isVerified ? "bg-gray-700 text-gray-200 border-gray-500 hover:bg-gray-600" : "bg-green-700 text-white border-green-600 hover:bg-green-800"}`}
+                title={isVerified ? "Remove verification" : "Grant verification"}
+              >
+                {isVerified ? "Unverify" : "Verify"}
               </button>
             )}
             </div>
@@ -726,25 +700,74 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
             {new Date(thread.created_at).toLocaleString()}
           </p>
           <div className="space-y-4">
-            {posts.map((post, idx) => (
-              <div key={post.id} className="flex">
-                <div className=" pr-4">{renderUserProfile(post.username)}</div>
-                <div className="w-5/6">
-                  <div className="rounded-lg p-4 bg-gray-700/50 overflow-hidden">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-400">
-                        {new Date(post.created_at).toLocaleString()}
-                      </span>
-            {currentUsername === post.username && !post.is_deleted && (
-                        <button
-              onClick={() => handleDeletePost(post.id, post.username)}
-                          className="px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
-                        >
-                          Delete Post
-                        </button>
+            {/* Multi-file viewer (if exists) */}
+            {files.length > 0 && (
+              <div className="rounded-lg border border-gray-600/40 bg-gray-700/30 overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-gray-600/40 bg-gray-800/60">
+                  <span className="text-xs text-gray-300">Files</span>
+                  <button onClick={() => setExplorerOpen((v)=>!v)} className="text-xs text-gray-300 hover:text-white">{explorerOpen ? 'Hide' : 'Show'}</button>
+                </div>
+                <div className="grid grid-cols-12">
+                  {explorerOpen && (
+                    <div className="col-span-3 bg-gray-900/70 border-r border-gray-700 max-h-[400px] overflow-auto">
+                      <ul className="text-xs">
+                        {files.map((f) => (
+                          <li key={f.id}>
+                            <button
+                              onClick={() => setActiveFileId(f.id)}
+                              className={`w-full text-left px-2 py-1 hover:bg-gray-800 ${activeFileId === f.id ? 'bg-blue-900/60 text-white' : 'text-gray-200'}`}
+                            >
+                              <span className="truncate inline-block max-w-[95%] align-middle">{f.filename}</span>
+                              {f.is_entry && <span className="ml-1 text-[10px] text-yellow-300 align-middle">★</span>}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <div className={explorerOpen ? 'col-span-9' : 'col-span-12'}>
+                    <div className="p-3 overflow-auto">
+                      {activeContent ? (
+                        <pre className="text-xs">
+                          <code className={`language-${(files.find((f)=>f.id===activeFileId)?.language) || mapCategoryToLanguage(thread.category_name)}`}>
+                            {activeContent}
+                          </code>
+                        </pre>
+                      ) : (
+                        <div className="text-xs text-gray-400 italic">Select a file to view its content</div>
                       )}
                     </div>
-                    {(() => {
+                  </div>
+                </div>
+              </div>
+            )}
+            {posts.map((post, idx) => (
+              <div key={post.id} className="">
+                <div className="rounded-lg p-4 bg-gray-700/50 overflow-hidden">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-2">
+                      <Image
+                        src={users[post.username]?.avatar_url || "/prof-pic.png"}
+                        alt={`${post.username} avatar`}
+                        width={32}
+                        height={32}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                      <a href={`/users/${post.username}`} className="text-sm font-medium hover:underline">{post.username}</a>
+                      <span className="text-xs text-gray-400">• {new Date(post.created_at).toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+            {currentUsername === post.username && !post.is_deleted && (
+                      <button
+              onClick={() => handleDeletePost(post.id, post.username)}
+                        className="px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+                      >
+                        Delete Post
+                      </button>
+                    )}
+                    </div>
+                  </div>
+                  {(() => {
                       if (post.is_deleted) {
                         return (
                           <div className="whitespace-pre-wrap overflow-wrap-break-word word-break-break-word max-w-full">
@@ -789,92 +812,81 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
                           {renderContentWithEmojisAndBBCode(post.content)}
                         </div>
                       );
-                    })()}
-                    {!post.is_deleted && (
-                      <div className="mt-2 flex items-center">
-                        <button
-                          onClick={() => (idx === 0 ? handleToggleThreadLike() : handleLike(post.id))}
-                          className={`flex items-center space-x-1 ${
-                            post.is_liked_by_user
-                              ? "text-blue-500"
-                              : "text-gray-400"
-                          } hover:text-blue-500 transition-colors`}
-                          disabled={!session || !session.user}
+                  })()}
+                  {!post.is_deleted && (
+                    <div className="mt-2 flex items-center">
+                      <button
+                        onClick={() => (idx === 0 ? handleToggleThreadLike() : handleLike(post.id))}
+                        className={`flex items-center space-x-1 ${
+                          post.is_liked_by_user
+                            ? "text-blue-500"
+                            : "text-gray-400"
+                        } hover:text-blue-500 transition-colors`}
+                        disabled={!session || !session.user}
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
                         >
-                          <svg
-                            className="w-5 h-5"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                          </svg>
-                          <span>{post.likes_count}</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  {!post.is_deleted && users[post.username]?.signature && (
-                    <div className="mt-4 bg-gray-900 rounded-lg p-4 h-64 overflow-y-auto">
-                      <h3 className="text-lg font-semibold">User Signature:</h3>
-                      <div className="overflow-wrap-break-word word-break-break-word max-w-full">
-                        {renderContentWithEmojisAndBBCode(
-                          users[post.username].signature,
-                        )}
-                      </div>
+                          <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                        </svg>
+                        <span>{post.likes_count}</span>
+                      </button>
                     </div>
                   )}
                 </div>
+                {!post.is_deleted && users[post.username]?.signature && (
+                  <div className="mt-2 bg-gray-900/70 rounded-lg p-3 max-h-40 overflow-y-auto">
+                    <div className="text-xs text-gray-400 mb-1">Signature</div>
+                    <div className="text-sm overflow-wrap-break-word word-break-break-word max-w-full">
+                      {renderContentWithEmojisAndBBCode(
+                        users[post.username].signature,
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
           {session && session.user ? (
             <form onSubmit={handleReplySubmit} className="mt-4">
-              <div className="relative">
-        {/* Simplified: IDE-like editor only, no extra toolbar */}
-                {/* IDE-like editor for replies */}
-                <div className="snippet-ide-shadow rounded-md border border-gray-700 overflow-hidden">
-                  <div className="px-3 py-2 bg-gray-800 flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full bg-red-500" />
-          <span className="h-3 w-3 rounded-full bg-green-500" />
-                    <span className="ml-2 text-[10px] uppercase tracking-wider text-gray-400">Editor</span>
+              <div className="rounded-md border border-gray-700 overflow-hidden snippet-ide-shadow">
+                <div className="px-3 py-2 bg-gray-800 flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-red-500" />
+                  <span className="h-3 w-3 rounded-full bg-green-500" />
+                  <span className="ml-2 text-[11px] uppercase tracking-wider text-gray-400">Reply</span>
+                </div>
+                <div className="bg-gray-900/80 grid grid-cols-[40px_1fr]">
+                  <div className="select-none text-right pr-2 py-3 text-gray-500 text-xs bg-gray-900/80 border-r border-gray-800">
+                    {Array.from({ length: Math.max(1, content.split('\n').length) }).map((_, i) => (
+                      <div key={i} className="leading-5">{i + 1}</div>
+                    ))}
                   </div>
-                  <div className="bg-gray-900/80 grid grid-cols-[40px_1fr]">
-                    {/* Line numbers */}
-                    <div className="select-none text-right pr-2 py-3 text-gray-500 text-xs bg-gray-900/80 border-r border-gray-800">
-                      {Array.from({ length: Math.max(1, content.split('\n').length) }).map((_, i) => (
-                        <div key={i} className="leading-5">{i + 1}</div>
-                      ))}
-                    </div>
-                    {/* Input area */}
-                    <div className="p-3">
-                      <textarea
-                        id="content"
-                        ref={textareaRef}
-                        value={content}
-                        onChange={(e) => updateContent(e.target.value)}
-                        onSelect={() => {
-                          if (textareaRef.current) {
-                            setSelectionRange([
-                              textareaRef.current.selectionStart,
-                              textareaRef.current.selectionEnd,
-                            ]);
-                          }
-                        }}
-                        className="w-full bg-transparent text-gray-100 font-mono text-sm leading-5 outline-none resize-y min-h-[180px]"
-                        rows={10}
-                        required
-                        spellCheck={false}
-                      />
-                    </div>
+                  <div className="p-3">
+                    <textarea
+                      ref={textareaRef}
+                      value={content}
+                      onChange={(e) => updateContent(e.target.value)}
+                      onSelect={() => {
+                        if (textareaRef.current) {
+                          setSelectionRange([
+                            textareaRef.current.selectionStart,
+                            textareaRef.current.selectionEnd,
+                          ]);
+                        }
+                      }}
+                      className="w-full bg-transparent text-gray-100 font-mono text-sm leading-5 outline-none resize-y min-h-[180px]"
+                      rows={10}
+                      required
+                      spellCheck={false}
+                    />
                   </div>
                 </div>
-                <div className="text-sm text-gray-400 mt-2">
-                  {content.length}/{MAX_CHARACTERS} characters
-                </div>
-                
               </div>
-              
-
+              <div className="text-sm text-gray-400 mt-2">
+                {content.length}/{MAX_CHARACTERS} characters
+              </div>
               <button
                 type="submit"
                 className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"

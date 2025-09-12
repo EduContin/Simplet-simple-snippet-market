@@ -29,15 +29,28 @@ export async function GET(req: NextRequest, { params }: { params: { username: st
     });
     const likes_on_snippets = Number(likesOnSnippetsRes.rows[0].total || 0);
 
-    // Basic profitability proxy: sum of confirmed incoming wallet transactions to this user
-    // Note: metadata may or may not reference a thread; we report gross income
-    const earningsRes = await database.query({
-      text: `SELECT COALESCE(SUM(amount_cents),0) as cents
-             FROM wallet_transactions
-             WHERE status='confirmed' AND to_user_id = $1`,
+    // Earnings: prefer denormalized users.earnings_cents if present; fallback to wallet tx sum
+    let earnings_cents = 0;
+    try {
+      const earn = await database.query({ text: `SELECT earnings_cents FROM users WHERE id=$1`, values: [userId] });
+      if (earn.rowCount) earnings_cents = Number(earn.rows[0].earnings_cents || 0);
+    } catch {}
+    if (!earnings_cents) {
+      const earningsRes = await database.query({
+        text: `SELECT COALESCE(SUM(amount_cents),0) as cents
+               FROM wallet_transactions
+               WHERE status='confirmed' AND to_user_id = $1`,
+        values: [userId],
+      });
+      earnings_cents = Number(earningsRes.rows[0].cents || 0);
+    }
+
+    // Verified stamps acquired: count of user's threads that are verified
+    const verifiedRes = await database.query({
+      text: `SELECT COUNT(1) AS c FROM threads WHERE user_id = $1 AND is_verified = true`,
       values: [userId],
     });
-    let earnings_cents = Number(earningsRes.rows[0].cents || 0);
+    const verified_stamps = Number(verifiedRes.rows[0].c || 0);
     // Privacy: only owner can see earnings
     if (!session?.user?.id || Number(session.user.id) !== userId) {
       earnings_cents = 0;
@@ -47,7 +60,8 @@ export async function GET(req: NextRequest, { params }: { params: { username: st
       likes_received,
       threads_count,
       likes_on_snippets,
-      earnings_cents,
+  earnings_cents,
+  verified_stamps,
     });
   } catch (e) {
     console.error('metrics error', e);

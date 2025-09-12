@@ -25,7 +25,7 @@ interface ThreadListProps {
   // Optional alternative rendering style for a more card-based layout
   view?: "table" | "cards";
   // Optional previews map when using cards view: threadId -> content preview
-  previews?: Record<number, { contentSnippet: string; title?: string } | undefined>;
+  previews?: Record<number, { contentSnippet: string; title?: string; language?: string } | undefined>;
   // Optional custom link resolver (return null or '#' to disable navigation)
   linkResolver?: (thread: Thread) => string | null;
   // Optional handler when user dismisses a snippet (red button)
@@ -176,7 +176,8 @@ const ThreadList: React.FC<ThreadListProps> = ({ threads, view = "table", previe
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {visibleThreads.map((thread) => {
             const preview = previews?.[thread.id]?.contentSnippet;
-            const defaultHref = `/snippet/${thread.id}`;
+            const previewLang = previews?.[thread.id]?.language;
+            const defaultHref = `/thread/${thread.id}`;
             const resolvedHref = linkResolver ? (linkResolver(thread) || "#") : defaultHref;
             const titleOverride = previews?.[thread.id]?.title;
             // Try to derive a descriptive title from the first meaningful line of code if no override provided
@@ -237,9 +238,17 @@ const ThreadList: React.FC<ThreadListProps> = ({ threads, view = "table", previe
                     />
                     <span className="ml-2 uppercase tracking-wider">{thread.category_name}</span>
                     <span className="mx-2 text-gray-600">•</span>
-                    <h3 className="text-sm font-semibold text-blue-300 group-hover:text-blue-200 truncate" title={titleToShow}>
-                      {titleToShow}
-                    </h3>
+                                                <h3 className="text-sm font-semibold text-blue-300 group-hover:text-blue-200 truncate flex items-center gap-2" title={titleToShow}>
+                                                    {titleToShow}
+                                                    {(thread as any).is_verified && (
+                                                      <span className="inline-flex items-center text-xs text-green-400 border border-green-500/50 rounded px-1 py-0.5">Verified</span>
+                                                    )}
+                                                    {((thread as any).file_count ?? 0) > 1 && (
+                                                      <span className="inline-flex items-center text-[10px] text-gray-300 border border-gray-500/40 rounded px-1 py-0.5">
+                                                        { (thread as any).file_count } files
+                                                      </span>
+                                                    )}
+                                                </h3>
                   </div>
                 </div>
                 {/* Code area with line numbers */}
@@ -254,7 +263,7 @@ const ThreadList: React.FC<ThreadListProps> = ({ threads, view = "table", previe
                       <div className={`p-3 overflow-hidden ${isExpanded ? 'max-h-80' : 'max-h-40'} transition-[max-height] duration-500 ease-in-out`}>
                         {preview ? (
                           <pre className={`font-mono text-[12px] leading-5 text-gray-200 whitespace-pre-wrap break-words ${isExpanded ? 'max-h-72' : 'max-h-32'} overflow-hidden transition-[max-height] duration-500 ease-in-out`}>
-                            <code className={`language-${mapCategoryToLanguage(thread.category_name)}`}>
+                            <code className={`language-${previewLang || mapCategoryToLanguage(thread.category_name)}`}>
                               {preview}
                             </code>
                           </pre>
