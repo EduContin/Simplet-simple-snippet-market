@@ -9,6 +9,8 @@ import debounce from "lodash/debounce";
 import { useRouter } from "next/navigation";
 import { FaTrashAlt } from "react-icons/fa";
 import { Prism, mapCategoryToLanguage } from "@/lib/prism";
+import SnippetFilesViewer from "@/components/SnippetFilesViewer";
+import AddToCartClient from "@/components/AddToCartClient";
 import { ThreadPropThread, UserThread } from "@/app/interfaces/interfaces";
 type SnippetFile = { id: number; filename: string; language: string | null; is_entry: boolean; size: number };
 
@@ -33,9 +35,11 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState<boolean>(Boolean((thread as any).is_verified));
   const [files, setFiles] = useState<SnippetFile[]>([]);
-  const [activeFileId, setActiveFileId] = useState<number | null>(null);
-  const [explorerOpen, setExplorerOpen] = useState<boolean>(true);
-  const [activeContent, setActiveContent] = useState<string | null>(null);
+  // Determine ownership (prefer session data for immediacy)
+  const meId = Number((session?.user as any)?.id || 0);
+  const meName = (session?.user as any)?.name as string | undefined;
+  const ownerId = Number((thread as any).user_id || 0);
+  const isOwner = (meName && meName === thread.username) || (meId > 0 && ownerId > 0 && meId === ownerId);
 
 
   const MAX_CHARACTERS = 5000; // Set the maximum character limit
@@ -79,13 +83,8 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
       });
 
       if (response.ok) {
-        const deletedPost = await response.json();
-        setPosts((prevPosts) =>
-          prevPosts.map((post) =>
-            post.id === deletedPost.id ? { ...post, ...deletedPost } : post,
-          ),
-        );
-        alert("Post deleted successfully");
+        const deleted = await response.json();
+        setPosts((prev) => prev.filter((p) => p.id !== deleted.id));
       } else {
         console.error("Failed to delete post");
         alert("Failed to delete post. Please try again.");
@@ -103,27 +102,10 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
         const res = await fetch(`/api/v1/threads/${thread.id}/files`, { cache: 'no-store' });
         if (!res.ok) return;
         const list: SnippetFile[] = await res.json();
-        setFiles(list);
-        const entry = list.find(f => f.is_entry) || list[0];
-        if (entry) setActiveFileId(entry.id);
+  setFiles(list);
       } catch {}
     })();
   }, [thread.id]);
-
-  useEffect(() => {
-    // Fetch active file content
-    (async () => {
-      if (!activeFileId) return;
-      try {
-        const res = await fetch(`/api/v1/snippet-files/${activeFileId}`, { cache: 'no-store' });
-        if (!res.ok) return;
-        const file = await res.json();
-        setActiveContent(file?.content ?? null);
-        // highlight after content loads
-        try { Prism.highlightAll(); } catch {}
-      } catch {}
-    })();
-  }, [activeFileId]);
   useEffect(() => {
     if (session?.user?.name) {
       fetch(`/api/v1/users/${session.user.name}`)
@@ -658,6 +640,11 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
     return null;
   };
 
+  // Re-run Prism highlighting after posts or files render
+  useEffect(() => {
+    try { Prism.highlightAll(); } catch {}
+  }, [posts, files]);
+
   return (
     <SessionProviderClient session={session}>
       {thread && thread.title ? (
@@ -670,6 +657,10 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
               )}
             </div>
       <div className="flex flex-row align-right space-x-3 sm:space-x-4">
+            {/* Add to Cart available for non-owners regardless of verification */}
+            {!isOwner && (
+              <AddToCartClient threadId={Number(thread.id)} />
+            )}
             {currentUsername === thread.username && (
               <button
                 onClick={handleDeleteThread}
@@ -702,44 +693,7 @@ const Thread: React.FC<ThreadPropThread> = ({ thread, posts: initialPosts }) => 
           <div className="space-y-4">
             {/* Multi-file viewer (if exists) */}
             {files.length > 0 && (
-              <div className="rounded-lg border border-gray-600/40 bg-gray-700/30 overflow-hidden">
-                <div className="flex items-center justify-between px-3 py-2 border-b border-gray-600/40 bg-gray-800/60">
-                  <span className="text-xs text-gray-300">Files</span>
-                  <button onClick={() => setExplorerOpen((v)=>!v)} className="text-xs text-gray-300 hover:text-white">{explorerOpen ? 'Hide' : 'Show'}</button>
-                </div>
-                <div className="grid grid-cols-12">
-                  {explorerOpen && (
-                    <div className="col-span-3 bg-gray-900/70 border-r border-gray-700 max-h-[400px] overflow-auto">
-                      <ul className="text-xs">
-                        {files.map((f) => (
-                          <li key={f.id}>
-                            <button
-                              onClick={() => setActiveFileId(f.id)}
-                              className={`w-full text-left px-2 py-1 hover:bg-gray-800 ${activeFileId === f.id ? 'bg-blue-900/60 text-white' : 'text-gray-200'}`}
-                            >
-                              <span className="truncate inline-block max-w-[95%] align-middle">{f.filename}</span>
-                              {f.is_entry && <span className="ml-1 text-[10px] text-yellow-300 align-middle">★</span>}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  <div className={explorerOpen ? 'col-span-9' : 'col-span-12'}>
-                    <div className="p-3 overflow-auto">
-                      {activeContent ? (
-                        <pre className="text-xs">
-                          <code className={`language-${(files.find((f)=>f.id===activeFileId)?.language) || mapCategoryToLanguage(thread.category_name)}`}>
-                            {activeContent}
-                          </code>
-                        </pre>
-                      ) : (
-                        <div className="text-xs text-gray-400 italic">Select a file to view its content</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <SnippetFilesViewer files={files} threadId={thread.id} />
             )}
             {posts.map((post, idx) => (
               <div key={post.id} className="">

@@ -18,6 +18,11 @@ interface Thread {
   first_post_likes?: number;
   first_post_id?: number;
   announcements: boolean;
+  file_count?: number;
+  meta_tags?: string[];
+  meta_license?: string | null;
+  meta_price_label?: string;
+  meta_price_cents?: number;
 }
 
 interface ThreadListProps {
@@ -288,6 +293,27 @@ const ThreadList: React.FC<ThreadListProps> = ({ threads, view = "table", previe
                     </button>
                   </div>
                   <div className="flex items-center gap-2">
+                    {/* Tags */}
+                    {Array.isArray(thread.meta_tags) && thread.meta_tags.length > 0 && (
+                      <div className="hidden md:flex items-center gap-1">
+                        {thread.meta_tags.slice(0, 3).map((t) => (
+                          <span key={t} className="text-[10px] border border-gray-600/60 rounded px-1 py-0.5 text-gray-300">{t}</span>
+                        ))}
+                      </div>
+                    )}
+                    {/* License and Price */}
+                    {thread.meta_license && (
+                      <span className="text-[11px] text-amber-300 border border-amber-500/40 rounded px-1 py-0.5">
+                        {thread.meta_license}
+                      </span>
+                    )}
+                    {typeof thread.meta_price_label === 'string' && (
+                      <span className="text-[11px] text-emerald-300 border border-emerald-500/40 rounded px-1 py-0.5">
+                        {thread.meta_price_label}
+                      </span>
+                    )}
+                    {/* Author and time */}
+                    <span className="mx-1 text-gray-500">•</span>
                     <FaUser className="text-gray-400" />
                     <a href={`/users/${thread.username}`} className="hover:text-gray-200">{thread.username}</a>
                     <span className="mx-1 text-gray-500">•</span>

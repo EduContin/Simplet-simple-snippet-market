@@ -13,6 +13,10 @@ type Thread = {
   announcements: boolean;
   file_count?: number;
   files_preview?: Array<{ id: number; filename: string; language: string | null; is_entry: boolean; content: string }>;
+  meta_tags?: string[];
+  meta_license?: string | null;
+  meta_price_label?: string;
+  meta_price_cents?: number;
 };
 
 async function fetchThreads(page = 1, pageSize = 24): Promise<Thread[]> {
@@ -90,6 +94,7 @@ export default function HomeClient() {
             const files = Array.isArray(t.files_preview) ? t.files_preview : [];
             const entry = files.find((f) => f.is_entry) || files[0];
             if (entry && entry.content) {
+              // Only primary document preview for multi-file snippets
               const snippet = (entry.content || "").slice(0, 280);
               let title: string | undefined;
               const firstLine = snippet.split("\n").find((l) => l.trim().length > 0) || "";

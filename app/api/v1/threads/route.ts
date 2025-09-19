@@ -18,8 +18,33 @@ export async function GET(request: NextRequest) {
   const offset = (page - 1) * pageSize;
 
   try {
+    // Helpers to derive meta from first post BBCode content
+    const parseLine = (label: string, content: string): string | null => {
+      const re = new RegExp(String.raw`\[b\]${label}:\[/b\]\s*([^\n]+)`, 'i');
+      const m = content.match(re);
+      return m ? m[1].trim() : null;
+    };
+    const parseTags = (content: string): string[] => {
+      const raw = parseLine('Tags', content) || '';
+      return raw
+        .split(',')
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0)
+        .slice(0, 6);
+    };
+    const parseLicense = (content: string): string | null => parseLine('License', content);
+    const parsePrice = (content: string): { cents: number; label: string } => {
+      const raw = parseLine('Price', content) || '';
+      if (!raw || /discussion/i.test(raw)) return { cents: 0, label: 'Up for discussion' };
+      const m = raw.match(/\$\s*([0-9]+(?:\.[0-9]{1,2})?)/);
+      if (!m) return { cents: 0, label: raw };
+      const num = parseFloat(m[1]);
+      const cents = Math.max(0, Math.round(num * 100));
+      return { cents, label: `$${(cents/100).toFixed(2)}` };
+    };
+
     let query = `
-    SELECT
+    SELECT  
         t.*,
         u.username,
         c.name AS category_name,
@@ -27,6 +52,7 @@ export async function GET(request: NextRequest) {
         MAX(p.created_at) AS last_post_at,
         (SELECT id FROM posts WHERE thread_id = t.id ORDER BY created_at ASC LIMIT 1) AS first_post_id,
   COALESCE((SELECT likes_count FROM posts WHERE thread_id = t.id ORDER BY created_at ASC LIMIT 1), 0) AS first_post_likes,
+  (SELECT content FROM posts WHERE thread_id = t.id ORDER BY created_at ASC LIMIT 1) AS first_post_content,
   COALESCE(t.revenue_cents, 0) AS revenue_cents,
   COALESCE((SELECT COUNT(1) FROM snippet_files sf WHERE sf.thread_id = t.id), 0) AS file_count
       , COALESCE((
@@ -109,8 +135,22 @@ export async function GET(request: NextRequest) {
       text: query,
       values: queryParams,
     });
+    // Derive meta client needs for cards
+    const rows = result.rows.map((r: any) => {
+      const content = String(r.first_post_content || '');
+      const tags = parseTags(content);
+      const license = parseLicense(content);
+      const price = parsePrice(content);
+      return {
+        ...r,
+        meta_tags: tags,
+        meta_license: license,
+        meta_price_label: price.label,
+        meta_price_cents: price.cents,
+      };
+    });
 
-    return NextResponse.json(result.rows);
+    return NextResponse.json(rows);
   } catch (error) {
     console.error("Error fetching threads:", error);
     return NextResponse.json(

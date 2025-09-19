@@ -16,8 +16,11 @@ const CreateThreadForm: React.FC<CreateThreadFormProps> = ({ categoryId }) => {
   type NewFile = { id: number; filename: string; language?: string; is_entry?: boolean; content: string };
   const [useMultiFiles, setUseMultiFiles] = useState(false);
   const [files, setFiles] = useState<NewFile[]>([{ id: 1, filename: "main.py", language: "python", is_entry: true, content: "" }]);
+  const [singleFilename, setSingleFilename] = useState("main.py");
+  const [singleLanguage, setSingleLanguage] = useState<string | undefined>("python");
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   // Editor-only view (no separate title/fields)
 
   const MAX_CHARACTERS = 5000; // Set the maximum character limit
@@ -92,6 +95,32 @@ const CreateThreadForm: React.FC<CreateThreadFormProps> = ({ categoryId }) => {
     return `Snippet`;
   };
 
+  const onFilesChosen = async (fl: FileList | null) => {
+    if (!fl || fl.length === 0) return;
+    const arr = Array.from(fl);
+    if (arr.length === 1) {
+      const f = arr[0];
+      const text = await f.text();
+      const lang = guessLangFromName(f.name);
+      setSingleFilename(f.name);
+      setSingleLanguage(lang);
+      updateContent(text);
+      return;
+    }
+    // Multiple files selected while in single-file mode -> switch to multi and populate
+    const fileObjs: NewFile[] = await Promise.all(
+      arr.map(async (f, idx) => ({
+        id: idx + 1,
+        filename: f.name,
+        language: guessLangFromName(f.name),
+        is_entry: idx === 0,
+        content: await f.text(),
+      })),
+    );
+    setFiles(fileObjs);
+    setUseMultiFiles(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -150,6 +179,50 @@ const CreateThreadForm: React.FC<CreateThreadFormProps> = ({ categoryId }) => {
           <input type="checkbox" className="accent-blue-600" checked={useMultiFiles} onChange={(e) => setUseMultiFiles(e.target.checked)} />
           Create with multiple files
         </label>
+        <div className="mb-2 flex items-center gap-2">
+          {/* Upload always visible */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={(e) => onFilesChosen(e.target.files)}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="px-3 py-1 text-xs bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
+          >
+            Upload file(s)
+          </button>
+          {!useMultiFiles && (
+            <>
+              <input
+                value={singleFilename}
+                onChange={(e) => {
+                  setSingleFilename(e.target.value);
+                  const g = guessLangFromName(e.target.value);
+                  if (g) setSingleLanguage(g);
+                }}
+                className="bg-gray-700/80 text-gray-100 text-xs px-2 py-1 rounded"
+              />
+              <select
+                value={singleLanguage || ''}
+                onChange={(e) => setSingleLanguage(e.target.value || undefined)}
+                className="bg-gray-700/80 text-gray-100 text-xs px-2 py-1 rounded"
+              >
+                <option value="">auto</option>
+                <option value="python">python</option>
+                <option value="javascript">javascript</option>
+                <option value="typescript">typescript</option>
+                <option value="html">html</option>
+                <option value="css">css</option>
+                <option value="json">json</option>
+                <option value="bash">bash</option>
+              </select>
+            </>
+          )}
+        </div>
       </div>
   <div className="relative mb-4">
         {/* Single-file editor OR multi-file list */}
@@ -158,7 +231,7 @@ const CreateThreadForm: React.FC<CreateThreadFormProps> = ({ categoryId }) => {
           <div className="px-3 py-2 bg-gray-800 flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-red-500" />
             <span className="h-3 w-3 rounded-full bg-green-500" />
-            <span className="ml-2 text-[11px] uppercase tracking-wider text-gray-400">Editor</span>
+            <span className="ml-2 text-[11px] uppercase tracking-wider text-gray-400">{singleFilename || 'Editor'}</span>
           </div>
           <div className="bg-gray-900/80 grid grid-cols-[40px_1fr]">
             {/* Line numbers */}
@@ -167,17 +240,22 @@ const CreateThreadForm: React.FC<CreateThreadFormProps> = ({ categoryId }) => {
                 <div key={i} className="leading-5">{i + 1}</div>
               ))}
             </div>
-            {/* Textarea */}
-            <div className="p-3">
+            {/* Editor with overlay highlight */}
+            <div className="relative">
+              <pre aria-hidden className="pointer-events-none absolute inset-0 m-0 p-3 font-mono text-[13px] leading-5 text-gray-200 whitespace-pre-wrap break-words">
+                <code className={`language-${singleLanguage || guessLangFromName(singleFilename || '') || 'clike'}`}
+                     dangerouslySetInnerHTML={{ __html: highlightFor(content, singleLanguage || undefined, singleFilename) }} />
+              </pre>
               <textarea
                 id="content"
                 ref={textareaRef}
                 value={content}
                 onChange={(e) => updateContent(e.target.value)}
-                className="w-full bg-transparent text-gray-100 font-mono text-sm leading-5 outline-none resize-y min-h-[200px]"
+                className="relative w-full bg-transparent text-transparent caret-white font-mono text-sm leading-5 outline-none resize-y min-h-[200px] p-3"
                 rows={10}
                 required
                 spellCheck={false}
+                placeholder={`Paste code for ${singleFilename}`}
               />
             </div>
           </div>

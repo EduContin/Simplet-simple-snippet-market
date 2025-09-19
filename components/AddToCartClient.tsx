@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 export default function AddToCartClient({ threadId }: { threadId: number }) {
   const [loading, setLoading] = useState(false);
   const [added, setAdded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const add = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await fetch("/api/v1/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -22,6 +24,13 @@ export default function AddToCartClient({ threadId }: { threadId: number }) {
   router.push("/cart");
       } else if (res.status === 401) {
         router.push("/login");
+      } else {
+        try {
+          const data = await res.json();
+          setError(data?.error || "Failed to add to cart");
+        } catch {
+          setError("Failed to add to cart");
+        }
       }
     } finally {
       setLoading(false);
@@ -43,6 +52,9 @@ export default function AddToCartClient({ threadId }: { threadId: number }) {
       >
         Go to Cart
       </button>
+      {error && (
+        <span className="text-xs text-red-400" role="alert">{error}</span>
+      )}
     </div>
   );
 }

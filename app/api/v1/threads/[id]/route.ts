@@ -61,27 +61,59 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
   try {
     await database.withTransaction(async (client) => {
-      // get owner id and posts count for counters adjustment
+      // Get owner id for threads_count adjustment
       const threadInfo = await database.queryWithClient(client, {
         text: `SELECT user_id FROM threads WHERE id = $1`,
         values: [threadId],
       });
       const ownerId = threadInfo.rows?.[0]?.user_id;
 
-      // Count posts to decrement posts_count properly
-      const postsCountRes = await database.queryWithClient(client, {
-        text: `SELECT COUNT(1) AS c FROM posts WHERE thread_id = $1`,
+      // Decrement posts_count per user who has posts in this thread
+      const postsPerUser = await database.queryWithClient(client, {
+        text: `SELECT user_id, COUNT(1) AS c FROM posts WHERE thread_id = $1 GROUP BY user_id`,
         values: [threadId],
       });
-      const postsCount = Number(postsCountRes.rows?.[0]?.c ?? 0);
+      for (const row of postsPerUser.rows) {
+        const uid = Number(row.user_id);
+        const c = Number(row.c || 0);
+        if (!uid || !c) continue;
+        await database.queryWithClient(client, {
+          text: `UPDATE users SET posts_count = GREATEST(0, posts_count - $1) WHERE id = $2`,
+          values: [c, uid],
+        });
+      }
 
-      // Delete thread (cascades posts and likes)
+      // Decrement likes_received per author for likes on posts in this thread
+      const likesPerAuthor = await database.queryWithClient(client, {
+        text: `SELECT p.user_id AS author_id, COUNT(*) AS c
+               FROM likes l JOIN posts p ON p.id = l.post_id
+               WHERE p.thread_id = $1
+               GROUP BY p.user_id`,
+        values: [threadId],
+      });
+      for (const row of likesPerAuthor.rows) {
+        const aid = Number(row.author_id);
+        const c = Number(row.c || 0);
+        if (!aid || !c) continue;
+        await database.queryWithClient(client, {
+          text: `UPDATE users SET likes_received = GREATEST(0, likes_received - $1) WHERE id = $2`,
+          values: [c, aid],
+        });
+      }
+
+      // Remove likes tied to posts in this thread to avoid orphans
+      await database.queryWithClient(client, {
+        text: `DELETE FROM likes WHERE post_id IN (SELECT id FROM posts WHERE thread_id = $1)`,
+        values: [threadId],
+      });
+
+      // Finally delete the thread (posts and snippet_files will cascade)
       await database.queryWithClient(client, { text: "DELETE FROM threads WHERE id = $1", values: [threadId] });
 
       if (ownerId) {
         await database.queryWithClient(client, {
-          text: `UPDATE users SET threads_count = GREATEST(0, threads_count - 1), posts_count = GREATEST(0, posts_count - $1) WHERE id = $2`,
-          values: [postsCount, ownerId],
+          text: `UPDATE users SET threads_count = GREATEST(0, threads_count - 1) WHERE id = $1`,
+          values: [ownerId],
         });
       }
     });
