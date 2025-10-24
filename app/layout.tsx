@@ -13,6 +13,9 @@ export const metadata = {
   title: 'Simplet',
 };
 
+// Ensure the entire app is treated as dynamic to avoid prerender/export mismatches
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: {
