@@ -22,6 +22,7 @@ const languageOptions = [
 
 const techOptions = [
   "UI", "API", "Algorithm", "Database", "DevOps", "Testing", "Tooling", "Academic",
+  "Auth", "Payments", "Analytics", "Cache", "Search", "CLI", "Docs",
 ];
 
 const licenseOptions = [
@@ -46,6 +47,9 @@ export default function NewSnippetPage() {
   const [code, setCode] = useState("");
   const [priceType, setPriceType] = useState<"fixed" | "discussion">("fixed");
   const [price, setPrice] = useState<string>("");
+  // New: custom tags support
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [checkResult, setCheckResult] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,6 +59,7 @@ export default function NewSnippetPage() {
   type NewFile = { id: number; filename: string; language?: string; is_entry?: boolean; content: string };
   const [useMultiFiles, setUseMultiFiles] = useState(false);
   const [files, setFiles] = useState<NewFile[]>([{ id: 1, filename: "snippet.js", language: "jsx", is_entry: true, content: "" }]);
+  const [activeFileId, setActiveFileId] = useState<number | null>(1);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const maxChars = 12000;
@@ -88,6 +93,7 @@ export default function NewSnippetPage() {
   const addFile = () => {
     const nextId = (files.at(-1)?.id ?? 1) + 1;
     setFiles((arr) => [...arr, { id: nextId, filename: `file${nextId}.txt`, content: "" }]);
+    setActiveFileId(nextId);
   };
   const updateFile = (id: number, patch: Partial<NewFile>) => {
     setFiles((arr) => arr.map((f) => (f.id === id ? { ...f, ...patch } : f)));
@@ -147,6 +153,8 @@ export default function NewSnippetPage() {
           const pick = idx >= 0 ? idx : 0;
           result.forEach((f, i) => (f.is_entry = i === pick));
         }
+        // focus first uploaded file
+        setActiveFileId(result[result.length - newOnes.length]?.id || result[0]?.id || null);
         return result;
       });
     } catch (e: any) {
@@ -226,8 +234,9 @@ export default function NewSnippetPage() {
     try {
       const categoryId = 1;
       if (!useMultiFiles) {
+        const allTags = Array.from(new Set([...tech, ...customTags])).slice(0, 6);
         const priceLine = priceType === "discussion" ? "Up for discussion" : (price ? `$${price}` : "—");
-        const meta = `[b]Tags:[/b] ${tech.length ? tech.join(', ') : '—'}\n[b]License:[/b] ${license}\n[b]Price:[/b] ${priceLine}\n\n${description ? description : ''}`;
+        const meta = `[b]Tags:[/b] ${allTags.length ? allTags.join(', ') : '—'}\n[b]License:[/b] ${license}\n[b]Price:[/b] ${priceLine}\n\n${description ? description : ''}`;
         const bb = `${meta}\n[code]\n${code}\n[/code]`;
         const langLabel = languageOptions.find((o) => o.id === language)?.label || language;
         const titleWithLang = `${title} • ${langLabel}`;
@@ -247,10 +256,13 @@ export default function NewSnippetPage() {
         const entry = (files.find((f) => f.is_entry) || files[0]);
         const derivedTitle = (title.trim() || entry?.filename || "Snippet");
         const payloadFiles = files.map(({ filename, language, is_entry, content }) => ({ filename, language, is_entry: !!is_entry, content }));
+        const allTags = Array.from(new Set([...tech, ...customTags])).slice(0, 6);
+        const priceLine = priceType === "discussion" ? "Up for discussion" : (price ? `$${price}` : "—");
+        const metaPost = `[b]Tags:[/b] ${allTags.length ? allTags.join(', ') : '—'}\n[b]License:[/b] ${license}\n[b]Price:[/b] ${priceLine}\n\n${description ? description : ''}`;
         const res = await fetch("/api/v1/threads/multi", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: derivedTitle, categoryId, files: payloadFiles }),
+          body: JSON.stringify({ title: derivedTitle, categoryId, files: payloadFiles, meta: metaPost }),
         });
         if (!res.ok) {
           const text = await res.text();
@@ -318,6 +330,36 @@ export default function NewSnippetPage() {
                 {t}
               </button>
             ))}
+          </div>
+          <div className="mt-3">
+            <label className="block mb-1 text-sm">Tags (max 6)</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {customTags.map((tag) => (
+                <span key={tag} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-700/60 text-gray-100 text-xs">
+                  {tag}
+                  <button type="button" className="text-gray-300 hover:text-white" onClick={() => setCustomTags((arr) => arr.filter((t) => t !== tag))}>×</button>
+                </span>
+              ))}
+            </div>
+            <input
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ',') && tagInput.trim()) {
+                  e.preventDefault();
+                  setCustomTags((arr) => {
+                    const next = Array.from(new Set([...arr, tagInput.trim()]))
+                      .filter(Boolean)
+                      .slice(0, 6);
+                    return next;
+                  });
+                  setTagInput("");
+                }
+              }}
+              placeholder="Add a tag and press Enter"
+              className="w-full md:w-80 px-3 py-2 bg-gray-700/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <div className="mt-1 text-xs text-gray-400">We’ll use these tags to help others find your snippet.</div>
           </div>
         </div>
 
@@ -449,50 +491,80 @@ export default function NewSnippetPage() {
 
         {useMultiFiles && (
           <div className="mt-6 space-y-3">
-            {files.map((f) => (
-              <div key={f.id} className="rounded-md border border-gray-700 overflow-hidden">
-                <div className="px-3 py-2 bg-gray-800 flex items-center gap-2">
-                  <input value={f.filename} onChange={(e) => updateFile(f.id, { filename: e.target.value })} className="bg-gray-700/80 text-gray-100 text-xs px-2 py-1 rounded" />
-                  <select value={f.language || ''} onChange={(e) => updateFile(f.id, { language: e.target.value })} className="bg-gray-700/80 text-gray-100 text-xs px-2 py-1 rounded">
-                    <option value="">auto</option>
-                    {languageOptions.map((o) => (
-                      <option key={o.id} value={o.id}>{o.label}</option>
-                    ))}
-                  </select>
-                  <label className="text-xs text-gray-300 inline-flex items-center gap-1">
-                    <input type="radio" name="entry" checked={!!f.is_entry} onChange={() => setFiles((arr) => arr.map((x) => ({ ...x, is_entry: x.id === f.id })))} />
-                    entry
-                  </label>
-                  <button type="button" onClick={() => removeFile(f.id)} className="ml-auto text-xs text-red-400 hover:text-red-300">Remove</button>
-                </div>
-                <div className="bg-gray-900/80 grid grid-cols-[48px_1fr]">
-                  {/* Line numbers */}
-                  <div className="select-none text-right pr-2 py-3 text-gray-500 text-xs bg-gray-900/80 border-r border-gray-800">
-                    {Array.from({ length: Math.max(1, (f.content || '').split('\n').length) }).map((_, i) => (
-                      <div key={i} className="leading-5">{i + 1}</div>
-                    ))}
-                  </div>
-                  {/* Editor area with syntax highlight overlay */}
-                  <div className="relative">
-                    <pre aria-hidden className="pointer-events-none absolute inset-0 m-0 p-3 font-mono text-[13px] leading-5 text-gray-200 whitespace-pre-wrap break-words">
-                      <code className={`language-${f.language || guessLangFromName(f.filename || '') || 'clike'}`}
-                        dangerouslySetInnerHTML={{ __html: highlightFor(f.content, f.language, f.filename) }} />
-                    </pre>
-                    <textarea
-                      value={f.content}
-                      onChange={(e) => updateFile(f.id, { content: e.target.value })}
-                      rows={8}
-                      className="relative w-full bg-transparent text-transparent caret-white font-mono text-sm leading-5 outline-none resize-y p-3 min-h-[160px]"
-                      placeholder={`Paste code for ${f.filename}`}
-                      spellCheck={false}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-            <div>
-              <button type="button" onClick={addFile} className="px-3 py-1 text-xs bg-gray-700 text-gray-100 rounded hover:bg-gray-600">+ Add file</button>
+            {/* Tile grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {files.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setActiveFileId(f.id)}
+                  className={`group relative h-24 rounded-md border ${activeFileId === f.id ? 'border-blue-500 bg-blue-950/40' : 'border-gray-700 bg-gray-900/50'} p-2 text-left`}
+                  title={f.filename}
+                >
+                  <div className="text-[11px] text-gray-200 line-clamp-2 pr-5">{f.filename}</div>
+                  {f.is_entry && <span className="absolute top-1 right-1 text-[10px] text-yellow-300">★</span>}
+                  <div className="absolute bottom-2 left-2 text-[10px] text-gray-400">{(f.language || guessLangFromName(f.filename || '') || 'clike')}</div>
+                  <div className="absolute bottom-2 right-2 text-[10px] text-gray-500">{(f.content || '').length}c</div>
+                </button>
+              ))}
+              {/* Add tile */}
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('fileUploader') as HTMLInputElement | null;
+                  if (el) el.click();
+                  else addFile();
+                }}
+                className="h-24 rounded-md border border-dashed border-gray-600 hover:border-gray-500 bg-gray-900/30 text-gray-300"
+              >
+                + Add file
+              </button>
             </div>
+
+            {/* Editor for active file */}
+            {(() => {
+              const f = files.find(x => x.id === activeFileId) || files[0];
+              if (!f) return null;
+              const lang = f.language || guessLangFromName(f.filename || '') || 'clike';
+              return (
+                <div className="rounded-md border border-gray-700 overflow-hidden">
+                  <div className="px-3 py-2 bg-gray-800 flex items-center gap-2">
+                    <input value={f.filename} onChange={(e) => updateFile(f.id, { filename: e.target.value })} className="bg-gray-700/80 text-gray-100 text-xs px-2 py-1 rounded" />
+                    <select value={f.language || ''} onChange={(e) => updateFile(f.id, { language: e.target.value })} className="bg-gray-700/80 text-gray-100 text-xs px-2 py-1 rounded">
+                      <option value="">auto</option>
+                      {languageOptions.map((o) => (
+                        <option key={o.id} value={o.id}>{o.label}</option>
+                      ))}
+                    </select>
+                    <label className="text-xs text-gray-300 inline-flex items-center gap-1">
+                      <input type="radio" name="entry" checked={!!f.is_entry} onChange={() => setFiles((arr) => arr.map((x) => ({ ...x, is_entry: x.id === f.id })))} />
+                      entry
+                    </label>
+                    <button type="button" onClick={() => removeFile(f.id)} className="ml-auto text-xs text-red-400 hover:text-red-300">Remove</button>
+                  </div>
+                  <div className="bg-gray-900/80 grid grid-cols-[48px_1fr]">
+                    <div className="select-none text-right pr-2 py-3 text-gray-500 text-xs bg-gray-900/80 border-r border-gray-800">
+                      {Array.from({ length: Math.max(1, (f.content || '').split('\n').length) }).map((_, i) => (
+                        <div key={i} className="leading-5">{i + 1}</div>
+                      ))}
+                    </div>
+                    <div className="relative">
+                      <pre aria-hidden className="pointer-events-none absolute inset-0 m-0 p-3 font-mono text-[13px] leading-5 text-gray-200 whitespace-pre-wrap break-words">
+                        <code className={`language-${lang}`} dangerouslySetInnerHTML={{ __html: highlightFor(f.content, f.language, f.filename) }} />
+                      </pre>
+                      <textarea
+                        value={f.content}
+                        onChange={(e) => updateFile(f.id, { content: e.target.value })}
+                        rows={10}
+                        className="relative w-full bg-transparent text-transparent caret-white font-mono text-sm leading-5 outline-none resize-y p-3 min-h-[200px]"
+                        placeholder={`Paste code for ${f.filename}`}
+                        spellCheck={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import debounce from "lodash/debounce";
@@ -235,7 +235,7 @@ export default function SettingsPage() {
       const blob = await response.blob();
       console.log("Comparing blob size", blob.size, MAX_IMAGE_SIZE);
       if (blob.size > MAX_IMAGE_SIZE) {
-        setError("Profile picture size exceeds the maximum allowed (2MB)");
+        setError("Profile picture size exceeds the maximum allowed (5MB)");
         return;
       }
       updateSetting("profilePicture", { avatarUrl });
@@ -256,8 +256,22 @@ export default function SettingsPage() {
     updateSetting("password", { currentPassword, newPassword });
   };
 
+  // Password strength
+  const passwordStrength = useMemo(() => {
+    const pwd = newPassword || "";
+    let score = 0;
+    if (pwd.length >= 8) score++;
+    if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
+    if (/\d/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+    const levels = ["Very weak", "Weak", "Fair", "Good", "Strong"] as const;
+    const level = levels[Math.min(score, 4)];
+    const color = ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-lime-500", "bg-green-500"][Math.min(score, 4)];
+    return { score, level, color };
+  }, [newPassword]);
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 relative">
       <h1 className="text-3xl font-bold mb-6">User Settings</h1>
       {error && <p className="text-red-500 mb-4">{error}</p>}
       {success && <p className="text-green-500 mb-4">{success}</p>}
@@ -402,9 +416,14 @@ export default function SettingsPage() {
                   ]);
                 }
               }}
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border rounded bg-gray-900/40 border-gray-700 text-gray-100"
               required
             />
+            <div className="mt-1 text-right text-sm">
+              <span className={signature.length > MAX_CHARACTERS * 0.9 ? "text-red-400" : "text-gray-400"}>
+                {signature.length} / {MAX_CHARACTERS}
+              </span>
+            </div>
             <div className="mb-4">
               <button
                 type="button"
@@ -418,7 +437,7 @@ export default function SettingsPage() {
               <div className="mb-4">
                 <h3 className="text-xl font-bold mb-2">Preview:</h3>
                 <div
-                  className="bg-gray-700/50 rounded-md p-4 whitespace-pre-wrap break-all"
+                  className="bg-gray-800/60 rounded-md p-4 whitespace-pre-wrap break-all border border-gray-700"
                   dangerouslySetInnerHTML={{ __html: formatContent(signature) }}
                 />
               </div>
@@ -466,7 +485,7 @@ export default function SettingsPage() {
               id="currentPassword"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border rounded bg-gray-900/40 border-gray-700 text-gray-100"
               required
             />
           </div>
@@ -479,9 +498,15 @@ export default function SettingsPage() {
               id="newPassword"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border rounded bg-gray-900/40 border-gray-700 text-gray-100"
               required
             />
+            <div className="mt-2">
+              <div className="h-2 w-full bg-gray-700 rounded">
+                <div className={`h-2 rounded ${passwordStrength.color}`} style={{ width: `${(passwordStrength.score/4)*100}%` }} />
+              </div>
+              <div className="text-sm mt-1 text-gray-300">Strength: {passwordStrength.level}</div>
+            </div>
           </div>
           <div>
             <label htmlFor="confirmPassword" className="block mb-1">
@@ -492,7 +517,7 @@ export default function SettingsPage() {
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border rounded bg-gray-900/40 border-gray-700 text-gray-100"
               required
             />
           </div>

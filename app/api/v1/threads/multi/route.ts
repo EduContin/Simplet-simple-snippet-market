@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   const meId = session?.user?.id;
   if (!meId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { title, categoryId, files } = await request.json();
+  const { title, categoryId, files, meta } = await request.json();
   if (!Array.isArray(files) || files.length === 0) {
     return NextResponse.json({ error: 'files required' }, { status: 400 });
   }
@@ -24,10 +24,13 @@ export async function POST(request: NextRequest) {
     values: [title || 'Snippet', meId, categoryId],
       });
       threadId = insThread.rows[0].id;
-      // Create a first post with a minimal note
+      // Create a first post with optional meta so homepage derives tags/license/price
+      const firstPost = typeof meta === 'string' && meta.trim().length > 0
+        ? `${meta}\n\n[code]Multi-file snippet created[/code]`
+        : "[code]Multi-file snippet created[/code]";
       await database.queryWithClient(client, {
         text: `INSERT INTO posts (content, user_id, thread_id) VALUES ($1, $2, $3)`,
-    values: ["[code]Multi-file snippet created[/code]", meId, threadId],
+        values: [firstPost, meId, threadId],
       });
       // Insert snippet files
       for (const f of files) {

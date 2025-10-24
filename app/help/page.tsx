@@ -103,7 +103,8 @@ const HelpPage: React.FC = () => {
   ];
 
   return (
-  <div className="container mx-auto px-4 py-8">
+  <div className="container mx-auto px-4 py-8 relative">
+    <div className="relative z-10">
       <Head>
         <title>VEC Platform - Help & Information</title>
         <meta
@@ -113,7 +114,7 @@ const HelpPage: React.FC = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="max-w-5xl mx-auto">
+  <main className="max-w-5xl mx-auto">
         <h1 className="text-3xl font-bold text-center mb-6 text-gray-100">
           Welcome to Simplet
         </h1>
@@ -169,9 +170,9 @@ const HelpPage: React.FC = () => {
               </a>
             </li>
           </ul>
-        </nav>
+  </nav>
 
-        <section id="about-us" className="mb-6 bg-gray-800/90 backdrop-blur-sm p-6 border border-gray-700 rounded-lg">
+  <section id="about-us" className="mb-6 bg-gray-800/90 backdrop-blur-sm p-6 border border-gray-700 rounded-lg">
           <h2 className="text-2xl font-semibold mb-3 text-gray-100">
             About Our Platform
           </h2>
@@ -211,7 +212,7 @@ const HelpPage: React.FC = () => {
   where code is not only a tool, but also an <span className="text-white font-semibold">asset that can be valued, reused, and evolved collectively</span>.
 </p>
 
-        </section>
+  </section>
 
         <section id="general-rules" className="mb-6 bg-gray-800/90 backdrop-blur-sm p-6 border border-gray-700 rounded-lg">
           <h2 id="general-rules" className="text-2xl font-semibold mb-3 text-gray-100">Platform Guidelines</h2>
@@ -301,6 +302,7 @@ const HelpPage: React.FC = () => {
           </p>
         </section>
       </main>
+      </div>
     </div>
   );
 };

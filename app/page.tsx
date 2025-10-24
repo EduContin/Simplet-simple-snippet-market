@@ -5,6 +5,12 @@ import React from "react";
 import HomeClient from "@/components/HomeClient";
 
 export default function HomePage() {
-	return <HomeClient />;
+		return (
+			<main className="relative">
+				<div className="relative z-10">
+					<HomeClient />
+				</div>
+			</main>
+		);
 }
 

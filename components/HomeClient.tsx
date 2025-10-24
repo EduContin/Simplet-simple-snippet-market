@@ -70,7 +70,7 @@ export default function HomeClient() {
   const [query, setQuery] = useState("");
   const [language, setLanguage] = useState("All");
   const [problem, setProblem] = useState("All");
-  const [previews, setPreviews] = useState<Record<number, { contentSnippet: string; title?: string; language?: string }>>({});
+  const [previews, setPreviews] = useState<Record<number, { contentSnippet: string; title?: string; language?: string; metaTags?: string[]; metaLicense?: string | null; metaPriceLabel?: string }>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -89,13 +89,23 @@ export default function HomeClient() {
         if (data && data.length > 0) {
           setThreads(data);
           // Build previews: prefer entry file content if present; fallback to first post content
-          const map: Record<number, { contentSnippet: string; title?: string; language?: string }> = {};
+          const map: Record<number, { contentSnippet: string; title?: string; language?: string; metaTags?: string[]; metaLicense?: string | null; metaPriceLabel?: string }> = {};
           for (const t of data as Thread[]) {
             const files = Array.isArray(t.files_preview) ? t.files_preview : [];
             const entry = files.find((f) => f.is_entry) || files[0];
             if (entry && entry.content) {
-              // Only primary document preview for multi-file snippets
-              const snippet = (entry.content || "").slice(0, 280);
+              // Multi-file intro + primary document preview
+              const fileCount = (t.file_count ?? files.length) || 1;
+              const introParts = [
+                `Name: ${t.title}`,
+                `Tags: ${Array.isArray(t.meta_tags) && t.meta_tags.length ? t.meta_tags.join(', ') : '—'}`,
+                `License: ${t.meta_license || '—'}`,
+                `Price: ${t.meta_price_label || '—'}`,
+                `Files: ${fileCount} ${fileCount === 1 ? 'file' : 'files'}`,
+              ];
+              const intro = introParts.join('\n');
+              const combined = `${intro}\n\n${entry.content || ''}`;
+              const snippet = combined.slice(0, 380);
               let title: string | undefined;
               const firstLine = snippet.split("\n").find((l) => l.trim().length > 0) || "";
               if (/^\s*(\/\/|#|--|\/\*|\*)/.test(firstLine)) {
@@ -110,16 +120,47 @@ export default function HomeClient() {
                 const m = firstLine.match(/def\s+([a-zA-Z0-9_]+)/);
                 title = m ? `${m[1]}()` : undefined;
               }
-              map[t.id] = { contentSnippet: snippet + ((entry.content || "").length > 280 ? "..." : ""), title, language: entry.language || undefined };
+              map[t.id] = { contentSnippet: snippet + ((combined.length > 380) ? "..." : ""), title, language: entry.language || undefined };
               continue;
             }
             // Fallback: fetch first post's content
             const content = await fetchFirstPost(t.id);
             if (content) {
-              const plain = content
+              // Remove BBCode and emojis
+              const raw = content
                 .replace(/\[\/?(b|i|u|s|quote|code|img|url|hidden|spoiler|align|size|color)(=[^\]]+)?\]/g, "")
-                .replace(/:\w+?:/g, "")
-                .slice(0, 280);
+                .replace(/:\w+?:/g, "");
+              // Extract meta lines if present
+              const lines = raw.split(/\r?\n/);
+              let tagsLine: string | undefined;
+              let licenseLine: string | undefined;
+              let priceLine: string | undefined;
+              const rest: string[] = [];
+              for (const ln of lines) {
+                const l = ln.trim();
+                if (/^Tags\s*:/.test(l)) { tagsLine = l; continue; }
+                if (/^License\s*:/.test(l)) { licenseLine = l; continue; }
+                if (/^Price\s*:/.test(l)) { priceLine = l; continue; }
+                rest.push(ln);
+              }
+              // Build preview meta
+              const metaTags = tagsLine ? tagsLine.replace(/^Tags\s*:\s*/, "").split(',').map(s => s.trim()).filter(Boolean) : undefined;
+              const metaLicense = licenseLine ? licenseLine.replace(/^License\s*:\s*/, "").trim() : undefined;
+              const metaPriceLabel = priceLine ? priceLine.replace(/^Price\s*:\s*/, "").trim() : undefined;
+
+              // Clean up leftover leading blank lines
+              let cleaned = rest.join("\n").replace(/^\s+/, "");
+              // Build intro and prepend
+              const introParts = [
+                `Name: ${t.title}`,
+                `Tags: ${(metaTags && metaTags.length) ? metaTags.join(', ') : '—'}`,
+                `License: ${metaLicense || '—'}`,
+                `Price: ${metaPriceLabel || '—'}`,
+                `Files: 1 file`,
+              ];
+              const intro = introParts.join('\n');
+              const combined = `${intro}\n\n${cleaned}`;
+              const plain = combined.slice(0, 380);
               let title: string | undefined;
               const firstLine = plain.split("\n").find((l) => l.trim().length > 0) || "";
               if (/^\s*(\/\/|#|--|\/\*|\*)/.test(firstLine)) {
@@ -134,7 +175,13 @@ export default function HomeClient() {
                 const m = firstLine.match(/def\s+([a-zA-Z0-9_]+)/);
                 title = m ? `${m[1]}()` : undefined;
               }
-              map[t.id] = { contentSnippet: plain + (content.length > 280 ? "..." : ""), title };
+              map[t.id] = {
+                contentSnippet: plain + (combined.length > 380 ? "..." : ""),
+                title,
+                metaTags,
+                metaLicense: metaLicense ?? null,
+                metaPriceLabel,
+              };
             }
           }
           if (!mounted) return;

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { FaDownload } from 'react-icons/fa';
 // (query param handled via window.location)
 
 type ThreadRow = {
@@ -121,7 +122,14 @@ const [tab, setTab] = useState<'created' | 'liked' | 'owned'>(['created','liked'
 							{own && <StatCard label="Revenue" value={`$${(((t as any).revenue_cents||0)/100).toFixed(2)}`} />}
 						</div>
 						{ownedList && (
-							<a href={`/api/v1/snippets/${t.id}/download`} className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium">Download</a>
+							<a
+								href={`/api/v1/snippets/${t.id}/download`}
+								title="Download snippet"
+								className="inline-flex items-center gap-2 px-3 py-2 rounded-none bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
+							>
+								<FaDownload />
+								<span>Download</span>
+							</a>
 						)}
 					</div>
 				</li>
@@ -132,9 +140,9 @@ const [tab, setTab] = useState<'created' | 'liked' | 'owned'>(['created','liked'
 		</ul>
 	);
 
-	return (
-		<main className="container mx-auto px-4 py-6">
-			<div className="bg-gray-800/90 backdrop-blur-sm rounded-lg p-6 shadow-lg">
+		return (
+			<main className="container mx-auto px-4 py-6">
+				<div className="bg-gray-800/90 backdrop-blur-sm rounded-lg p-6 shadow-lg relative z-10">
 				<div className="flex items-center justify-between mb-4">
 					<h1 className="text-2xl font-bold text-gray-100">My Snippets</h1>
 					<div className="flex gap-2">
